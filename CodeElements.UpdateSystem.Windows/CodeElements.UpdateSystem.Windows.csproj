@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{61215D9C-B5D1-4ADD-AE5F-292D065117AB}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>CodeElements.UpdateSystem.Windows</RootNamespace>
+    <AssemblyName>CodeElements.UpdateSystem.Windows</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\CodeElements.UpdateSystem.Windows.RollbackApp\RollbackAppInfo.cs">
+      <Link>Patcher\RollbackApp\RollbackAppInfo.cs</Link>
+    </Compile>
+    <Compile Include="EnvironmentApplicationCloser.cs" />
+    <Compile Include="Extensions\DownloadableExtensions.cs" />
+    <Compile Include="FileExtensions.cs" />
+    <Compile Include="Patcher\Translations\ImplementedUpdaterTranslation.cs" />
+    <Compile Include="IWindowsUpdaterTranslation.cs" />
+    <Compile Include="Patcher\EnvironmentManager.cs" />
+    <Compile Include="Patcher\Translations\IPatcherTranslation.cs" />
+    <Compile Include="Patcher\UI\Controls\BottomPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Patcher\UI\Controls\CaptionLabel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Patcher\UI\InstallForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Patcher\UI\InstallForm.Designer.cs">
+      <DependentUpon>InstallForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="IApplicationCloser.cs" />
+    <Compile Include="ManualApplicationCloser.cs" />
+    <Compile Include="Patcher\IRevertable.cs" />
+    <Compile Include="Patcher\IUpdateTaskExecuter.cs" />
+    <Compile Include="Patcher\Translations\PatcherTranslation.cs" />
+    <Compile Include="Patcher\Program.cs" />
+    <Compile Include="Patcher\Reversion\RevertableType.cs" />
+    <Compile Include="Patcher\Reversion\RevertDeleteFile.cs" />
+    <Compile Include="Patcher\Reversion\RollbackInfo.cs" />
+    <Compile Include="Patcher\Reversion\RevertMoveFile.cs" />
+    <Compile Include="Patcher\StatusUpdater.cs" />
+    <Compile Include="Patcher\Translations\WindowsPatcherTranslation.cs" />
+    <Compile Include="Patcher\UpdaterCore.cs" />
+    <Compile Include="Patcher\UpdateTasks\DeleteDirectoryTaskExecuter.cs" />
+    <Compile Include="Patcher\UpdateTasks\DeleteFilesTaskExecuter.cs" />
+    <Compile Include="Patcher\UpdateTasks\BatchScriptTaskExecuter.cs" />
+    <Compile Include="Patcher\UpdateTasks\KillProcessTaskExecuter.cs" />
+    <Compile Include="Patcher\UpdateTasks\PowerShellScriptTaskExecuter.cs" />
+    <Compile Include="Patcher\UpdateTasks\StartProcessTaskExecuter.cs" />
+    <Compile Include="Patcher\UpdateTasks\StartServiceTaskExecuter.cs" />
+    <Compile Include="Patcher\UpdateTasks\StopServiceTaskExecuter.cs" />
+    <Compile Include="Patcher\UpdateTasks\UpdateTaskExecuter.cs" />
+    <Compile Include="Patcher\Utilities\Logger.cs" />
+    <Compile Include="Patcher\Utilities\Retry.cs" />
+    <Compile Include="Patcher\Utilities\StringExtensions.cs" />
+    <Compile Include="Patcher\Utilities\Swal.cs" />
+    <Compile Include="Patcher\Utilities\User.cs" />
+    <Compile Include="Patcher\WindowsPatcherConfig.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="UpdaterUi.cs" />
+    <Compile Include="WindowsPatcher.cs" />
+    <Compile Include="WindowsUpdaterTranslation.cs" />
+    <EmbeddedResource Include="Patcher\UI\InstallForm.resx">
+      <DependentUpon>InstallForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CodeElements.UpdateSystem\CodeElements.UpdateSystem.csproj">
+      <Project>{b74f4bae-da1f-45e0-b8dd-eb45b73b2833}</Project>
+      <Name>CodeElements.UpdateSystem</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\CodeElements.UpdateSystem.Windows.RollbackApp\bin\Release\CodeElements.UpdateSystem.Windows.RollbackApp.exe">
+      <Link>Patcher\RollbackApp\CodeElements.UpdateSystem.Windows.RollbackApp.exe</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="logo.png" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
