@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -206,6 +207,7 @@ namespace CodeElements.UpdateSystem.Core
                     {
                         //we have to build our own operation list from the target files and the current file base
                         fileOperations = new List<IFileOperation>();
+                        var updateOperations = new Dictionary<Hash, Tuple<UpdateFileOperation, Hash>>(); //key hash is new file hash, hash in tuple is current hash
                         await Task.Run(() =>
                         {
                             foreach (var targetFile in _downloadable.Instructions.TargetFiles)
@@ -217,30 +219,52 @@ namespace CodeElements.UpdateSystem.Core
                                 }
                                 else
                                 {
-                                    if (currentFile.Length != targetFile.Length)
-                                        fileOperations.Add(new UpdateFileOperation {Target = targetFile});
-                                    else
-                                        using (var fileStream = currentFile.OpenRead())
+                                    //if (currentFile.Length != targetFile.Length) - removed because we need the hash for the update operation
+                                    using (var fileStream = currentFile.OpenRead())
+                                    {
+                                        var hash = new Hash(sha256.ComputeHash(fileStream));
+                                        if (!hash.Equals(targetFile.Hash))
                                         {
-                                            var hash = new Hash(sha256.ComputeHash(fileStream));
-                                            if (!hash.Equals(targetFile.Hash))
-                                                fileOperations.Add(new UpdateFileOperation {Target = targetFile});
+                                            var updateOperation = new UpdateFileOperation {Target = targetFile};
+                                            fileOperations.Add(updateOperation);
+                                            updateOperations.Add(updateOperation.Target.Hash,
+                                                new Tuple<UpdateFileOperation, Hash>(updateOperation, hash));
                                         }
+                                    }
                                 }
 
                                 scanFiles.Increment();
                             }
                         });
 
-                        var updateOperations = fileOperations.OfType<UpdateFileOperation>().ToList();
                         if (updateOperations.Count > 0)
                         {
+                            //Dictionary: Current File => Target file
+                            var updates = updateOperations.ToDictionary(x => x.Value.Item2, y => y.Key);
+                            var response = await UpdateController.HttpClient.PostAsync(
+                                new Uri(UpdateController.UpdateSystemApiUri,
+                                    $"projects/{_downloadable.ProjectGuid:N}/findDeltaPatches"),
+                                new StringContent(JsonConvert.SerializeObject(updates)));
+                            if (response.StatusCode == HttpStatusCode.OK)
+                            {
+                                //Dictionary target hash => delta patches from source hash
+                                var patches =
+                                    JsonConvert.DeserializeObject<Dictionary<Hash, List<DeltaPatchInfo>>>(
+                                        await response.Content.ReadAsStringAsync());
+                                if (patches?.Count > 0)
+                                {
+                                    foreach (var patch in patches)
+                                    {
+                                        var updateOperation = updateOperations[patch.Key];
+                                        fileOperations.Remove(updateOperation.Item1);
+                                        fileOperations.Add(new DeltaPatchOperation{Patches = patch.Value, Target = updateOperation.Item1.Target});
+                                    }
+                                }
+                            } //else ignore, delta patches are not that important
                         }
                     }
                     else
-                    {
                         fileOperations = _downloadable.Instructions.FileOperations;
-                    }
 
                     var downloadOperations = fileOperations.OfType<INeedDownload>().ToList();
 
@@ -283,7 +307,7 @@ namespace CodeElements.UpdateSystem.Core
                                         if (!deltaFile.Exists)
                                         {
                                             await DownloadFile(new Uri(UpdateController.UpdateSystemApiUri,
-                                                    $"projects/{_downloadable.ProjectGuid:N}/downloadDelta?patchId={deltaPatchInfo.PatchId}"), deltaFile, downloadBuffer,
+                                                    $"projects/{_downloadable.ProjectGuid:N}/download?patchId={deltaPatchInfo.PatchId}"), deltaFile, downloadBuffer,
                                                 needDownload.Target.Length, processingItem);
                                             BytesDownloaded = dataDownloaded += needDownload.Target.Length;
                                         }
@@ -367,9 +391,16 @@ namespace CodeElements.UpdateSystem.Core
                         filesDictionary.Add(fileHash, tempFile);
                         processingItem.Complete();
                     }
-                }
 
-                return new ApplicationPatcher(_environmentManager, new PatcherConfig());
+                    return new ApplicationPatcher(_environmentManager,
+                        new PatcherConfig
+                        {
+                            AvailableFiles = filesDictionary.ToDictionary(x => x.Key, y => y.Value.FullName),
+                            FileOperations = fileOperations,
+                            TempDirectory = tempDirectory.FullName,
+                            UpdateTasks = _downloadable.Instructions.Tasks
+                        });
+                }
             }
             catch (Exception)
             {
