@@ -46,7 +46,6 @@
       <Link>Patcher\RollbackApp\RollbackAppInfo.cs</Link>
     </Compile>
     <Compile Include="EnvironmentApplicationCloser.cs" />
-    <Compile Include="Extensions\DownloadableExtensions.cs" />
     <Compile Include="FileExtensions.cs" />
     <Compile Include="Patcher\Translations\ImplementedUpdaterTranslation.cs" />
     <Compile Include="IWindowsUpdaterTranslation.cs" />

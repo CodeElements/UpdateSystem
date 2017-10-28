@@ -265,28 +265,40 @@ namespace CodeElements.UpdateSystem
 				build ?? Build);
 		}
 
-		/// <summary>
-		///     Returns a <see cref="System.String" /> that represents this instance.
-		/// </summary>
-		/// <returns>
-		///     A <see cref="System.String" /> that represents this instance.
-		/// </returns>
-		public override string ToString()
-		{
-			var version = "" + Major + "." + Minor + "." + Patch;
-			if (!string.IsNullOrEmpty(Prerelease))
-				version += "-" + Prerelease;
-			if (!string.IsNullOrEmpty(Build))
-				version += "+" + Build;
-			return version;
-		}
+	    /// <summary>
+	    ///     Returns a <see cref="System.String" /> that represents this instance.
+	    /// </summary>
+	    /// <returns>
+	    ///     A <see cref="System.String" /> that represents this instance.
+	    /// </returns>
+	    public override string ToString()
+	    {
+	        return ToString(true);
+	    }
 
-		/// <summary>
-		///     Compares to semantic versions by precedence. This does the same as a Equals, but ignores the build information.
-		/// </summary>
-		/// <param name="other">The semantic version.</param>
-		/// <returns><c>true</c> if the version precedence matches.</returns>
-		public bool PrecedenceMatches(SemVersion other)
+	    /// <summary>
+	    ///     Returns a <see cref="System.String" /> that represents this instance.
+	    /// </summary>
+	    /// <param name="includeBuild">True if the build part of the version should be included, false if not.</param>
+	    /// <returns>
+	    ///     A <see cref="System.String" /> that represents this instance.
+	    /// </returns>
+	    public string ToString(bool includeBuild)
+	    {
+	        var version = "" + Major + "." + Minor + "." + Patch;
+	        if (!string.IsNullOrEmpty(Prerelease))
+	            version += "-" + Prerelease;
+	        if (includeBuild && !string.IsNullOrEmpty(Build))
+	            version += "+" + Build;
+	        return version;
+	    }
+
+        /// <summary>
+        ///     Compares to semantic versions by precedence. This does the same as a Equals, but ignores the build information.
+        /// </summary>
+        /// <param name="other">The semantic version.</param>
+        /// <returns><c>true</c> if the version precedence matches.</returns>
+        public bool PrecedenceMatches(SemVersion other)
 		{
 			return CompareByPrecedence(other) == 0;
 		}

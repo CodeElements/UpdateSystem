@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using Newtonsoft.Json;
 
 namespace CodeElements.UpdateSystem.Core
@@ -11,11 +9,7 @@ namespace CodeElements.UpdateSystem.Core
     /// </summary>
     public class UpdatePackageSearchResult : IDownloadable
     {
-        /// <summary>
-        ///     The update controller the search was made with
-        /// </summary>
-        [JsonIgnore]
-        internal UpdateController UpdateController { get; private set; }
+        private IUpdateController _updateController;
 
         /// <summary>
         ///     Set to true if an update is enforced. This may be because the current version was rolled back or because a newer
@@ -57,19 +51,24 @@ namespace CodeElements.UpdateSystem.Core
         [JsonProperty("updateInstructions")]
         public UpdateInstructions Instructions { get; set; }
 
-        Guid IDownloadable.ProjectGuid => UpdateController.ProjectGuid;
+        /// <summary>
+        ///     The update controller the search was made with
+        /// </summary>
+        [JsonIgnore]
+        IUpdateController IDownloadable.UpdateController => _updateController;
 
-        RSAParameters IDownloadable.PublicKey => UpdateController.PublicKey;
-
-        internal void Initialize(UpdateController updateController)
+        internal void Initialize(IUpdateController updateController)
         {
-            UpdateController = updateController;
+            _updateController = updateController;
 
             if (UpdatePackages?.Count > 0)
             {
                 IsUpdateAvailable = true;
                 TargetPackage = UpdatePackages.Last();
                 IsUpdateEnforced = UpdatePackages.Any(x => x.IsEnforced) || Rollback;
+
+                foreach (var updatePackageInfo in UpdatePackages)
+                    updatePackageInfo.ReleaseDate = updatePackageInfo.ReleaseDate.ToLocalTime();
             }
         }
     }

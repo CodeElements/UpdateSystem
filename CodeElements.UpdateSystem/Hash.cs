@@ -18,6 +18,11 @@ namespace CodeElements.UpdateSystem
 		/// <param name="hashData">The data of the hash</param>
 		public Hash(byte[] hashData)
 		{
+		    if (hashData == null)
+		        throw new ArgumentNullException(nameof(hashData));
+		    if (hashData.Length == 0)
+		        throw new ArgumentException("An empty array cannot represent a hash value.");
+
 			HashData = hashData;
 		}
 
@@ -54,11 +59,37 @@ namespace CodeElements.UpdateSystem
 			return new Hash(value.ToByteArray());
 		}
 
-		/// <summary>
-		///     Convert the <see cref="HashData" /> to a hexadecimal string
-		/// </summary>
-		/// <returns></returns>
-		public override string ToString()
+	    /// <summary>
+	    ///     Try parse a hex string
+	    /// </summary>
+	    /// <param name="value">The hex string which represents a hash value</param>
+	    /// <param name="hash">The result hash</param>
+	    /// <returns>True if the <see cref="value" /> was successfully parsed, else false.</returns>
+	    public static bool TryParse(string value, out Hash hash)
+	    {
+	        if (value.Length % 2 == 1)
+	        {
+	            hash = null;
+	            return false;
+	        }
+
+	        try
+	        {
+	            hash = new Hash(value.ToByteArray());
+	            return true;
+	        }
+	        catch (Exception)
+	        {
+	            hash = null;
+	            return false;
+	        }
+	    }
+
+        /// <summary>
+        ///     Convert the <see cref="HashData" /> to a hexadecimal string
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
 		{
 			return BitConverter.ToString(HashData).Replace("-", null).ToLowerInvariant();
 		}
@@ -90,5 +121,25 @@ namespace CodeElements.UpdateSystem
 				return result;
 			}
 		}
+
+	    public static bool operator ==(Hash obj1, Hash obj2)
+	    {
+	        if (ReferenceEquals(obj1, obj2))
+	            return true;
+
+	        if (ReferenceEquals(obj1, null))
+	            return false;
+
+	        if (ReferenceEquals(obj2, null))
+	            return false;
+
+	        return obj1.HashData.Length == obj2.HashData.Length
+	               && obj1.HashData.SequenceEqual(obj2.HashData);
+	    }
+
+	    public static bool operator !=(Hash obj1, Hash obj2)
+	    {
+	        return !(obj1 == obj2);
+	    }
 	}
 }

@@ -16,34 +16,54 @@ namespace CodeElements.UpdateSystem
 	/// <summary>
 	///     The core class that provides the methods to search for update packages
 	/// </summary>
-	public class UpdateController
+	public class UpdateController<TEnvironmentSettings> : IUpdateController where TEnvironmentSettings : IEnvironmentManager, new()
 	{
-	    internal readonly Guid ProjectGuid;
-		internal static readonly Uri UpdateSystemApiUri = new Uri("https://localhost:9696/u/v1/");
+	    private readonly Lazy<HttpClient> _httpClient;
+	    private readonly Uri _updateSystemApiUri;
 
-		static UpdateController()
+	    /// <summary>
+	    /// Initialize a new instance of <see cref="UpdateController"/>
+	    /// </summary>
+	    /// <param name="projectGuid">The <see cref="Guid"/> of the project</param>
+	    /// <param name="cleanupUtilities">Provides utilities to cleanup redundant files created by the update system</param>
+	    /// <param name="httpMessageHandler"></param>
+	    public UpdateController(Guid projectGuid, HttpMessageHandler httpMessageHandler) : this(projectGuid)
 		{
-			HttpClient = new HttpClient();
+            _httpClient = new Lazy<HttpClient>(() => new HttpClient(httpMessageHandler));
 		}
 
-		public UpdateController(Guid projectGuid)
-		{
-			ProjectGuid = projectGuid;
-			VersionProvider = new AssemblyVersionProvider();
-			ChangelogLanguage = CultureInfo.CurrentUICulture;
-		}
+	    public UpdateController(Guid projectGuid, HttpClient httpClient) : this(projectGuid)
+	    {
+	        _httpClient = new Lazy<HttpClient>(() => httpClient);
+	    }
 
-		internal static HttpClient HttpClient { get; }
+        public UpdateController(Guid projectGuid)
+        {
+            ProjectGuid = projectGuid;
+            VersionProvider = new AssemblyVersionProvider();
+            ChangelogLanguage = CultureInfo.CurrentUICulture;
+            Settings = new TEnvironmentSettings();
+            _httpClient = new Lazy<HttpClient>(() => new HttpClient());
+            _updateSystemApiUri = new Uri("https://localhost:9696/u/v1/");
 
-		/// <summary>
+            Settings?.Cleanup(projectGuid);
+        }
+
+	    public Guid ProjectGuid { get; }
+
+	    /// <summary>
 		///     The public key to validate the signatures of the files
 		/// </summary>
 		public RSAParameters PublicKey { get; set; }
 
-		/// <summary>
-		///     The current version provider that is used to retrieve the application version
-		/// </summary>
-		public IVersionProvider VersionProvider { get; set; }
+	    IEnvironmentManager IUpdateController.Environment => Settings;
+	    HttpClient IUpdateController.HttpClient => _httpClient.Value;
+	    Uri IUpdateController.UpdateSystemApiUri => _updateSystemApiUri;
+
+        /// <summary>
+        ///     The current version provider that is used to retrieve the application version
+        /// </summary>
+        public IVersionProvider VersionProvider { get; set; }
 
 		/// <summary>
 		///     Filter the versions that should be found and updated to. If set to null, only release versions will be found
@@ -54,6 +74,8 @@ namespace CodeElements.UpdateSystem
 		///     The current platform to determine which files are relevant for this install
 		/// </summary>
 		public IPlatformProvider PlatformProvider { get; set; }
+
+	    public TEnvironmentSettings Settings { get; set; }
 
 		/// <summary>
 		///     The desired changelog language. The fallback language is always english
@@ -83,7 +105,7 @@ namespace CodeElements.UpdateSystem
 		    if (request.VersionFilter.Length > 10)
 		        throw new ArgumentException("A maximum of 10 version filters is allowed.");
 
-			var response = await HttpClient.PostAsync(new Uri(UpdateSystemApiUri, $"projects/{ProjectGuid:N}/check"),
+			var response = await _httpClient.Value.PostAsync(new Uri(_updateSystemApiUri, $"projects/{ProjectGuid:N}/check"),
 				new StringContent(JsonConvert.SerializeObject(request)));
 		    if (response.StatusCode != HttpStatusCode.OK)
 		        throw await GetException(response);
@@ -92,6 +114,9 @@ namespace CodeElements.UpdateSystem
 		        JsonConvert.DeserializeObject<UpdatePackageSearchResult>(
 		            await response.Content.ReadAsStringAsync());
             updateSearchResult.Initialize(this);
+
+		    if (!updateSearchResult.IsUpdateAvailable)
+		        Settings?.NoUpdatesFoundCleanup(ProjectGuid);
 
 		    return updateSearchResult;
 		}

@@ -39,5 +39,10 @@ namespace CodeElements.UpdateSystem.Extensions
 	            return deltaPatchOperation.Patches.Sum(x => x.Length);
 	        return needDownload.Target.Length;
 	    }
+
+	    public static UpdateDownloader GetDownloader(this IDownloadable downloadable)
+	    {
+	        return new UpdateDownloader(downloadable);
+	    }
 	}
 }

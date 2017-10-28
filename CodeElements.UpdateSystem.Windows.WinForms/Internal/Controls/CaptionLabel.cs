@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using System.Windows.Forms;
 
-namespace CodeElements.UpdateSystem.Windows.Patcher.UI.Controls
+namespace CodeElements.UpdateSystem.Windows.WinForms.Internal.Controls
 {
     [ToolboxBitmap(typeof(Label))]
     internal class CaptionLabel : Label

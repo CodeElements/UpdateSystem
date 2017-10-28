@@ -7,6 +7,7 @@ using System.Reflection;
 using CodeElements.UpdateSystem.Core;
 using CodeElements.UpdateSystem.Windows.Patcher;
 using CodeElements.UpdateSystem.Windows.Patcher.Translations;
+using CodeElements.UpdateSystem.Windows.Patcher.Utilities;
 using Newtonsoft.Json;
 
 namespace CodeElements.UpdateSystem.Windows
@@ -53,51 +54,9 @@ namespace CodeElements.UpdateSystem.Windows
         /// </summary>
         public IWindowsUpdaterTranslation Language { get; set; }
 
-        public void Cleanup(Guid projectGuid)
+        DirectoryInfo IEnvironmentManager.GetTempDirectory(Guid projectGuid)
         {
-            foreach (var directory in Directory.GetDirectories(Path.GetTempPath(),
-                $"CodeElements.UpdateSystem.{projectGuid:D}*", SearchOption.TopDirectoryOnly))
-                try
-                {
-                    Directory.Delete(directory, true);
-                }
-                catch (IOException)
-                {
-                    continue;
-                }
-
-            foreach (var directory in Directory.GetDirectories(BaseDirectory, "CodeElements.UpdateSystem.Backup*"))
-                try
-                {
-                    Directory.Delete(directory, true);
-                }
-                catch (IOException)
-                {
-                    continue;
-                }
-        }
-
-        DirectoryInfo IEnvironmentManager.GetEmptyTempDirectory(Guid projectGuid)
-        {
-            var directory =
-                new DirectoryInfo(Path.Combine(Path.GetTempPath(), $"CodeElements.UpdateSystem.{projectGuid:D}"));
-            if (directory.Exists)
-                try
-                {
-                    directory.Delete(true);
-                }
-                catch (IOException)
-                {
-                    //if the deletion failed, use a unique directory name
-                    directory = new DirectoryInfo(FileExtensions.MakeDirectoryUnique(directory.FullName));
-                }
-
-            return directory;
-        }
-
-        void IEnvironmentManager.DeleteTempDirectory(DirectoryInfo directoryInfo)
-        {
-            directoryInfo.Delete(true);
+            return new DirectoryInfo(Path.Combine(Path.GetTempPath(), $"CodeElements.UpdateSystem.{projectGuid:D}"));
         }
 
         internal static string TranslateFilename(string filename, string baseDirectory)
@@ -124,7 +83,7 @@ namespace CodeElements.UpdateSystem.Windows
                 Path.GetFileNameWithoutExtension(patcherAssembly.Name) + ".exe"));
 
             //copy dependencies
-            CopyFileSameName(Assembly.GetAssembly(typeof(UpdateController)).Location, patcherDirectory);
+            CopyFileSameName(Assembly.GetAssembly(typeof(UpdateController<>)).Location, patcherDirectory);
             CopyFileSameName(Assembly.GetAssembly(typeof(JsonConvert)).Location, patcherDirectory);
 
             var arguments = new List<string>();
@@ -177,6 +136,20 @@ namespace CodeElements.UpdateSystem.Windows
         private static void CopyFileSameName(string fileLocation, DirectoryInfo targetLocation)
         {
             File.Copy(fileLocation, Path.Combine(targetLocation.FullName, Path.GetFileName(fileLocation)));
+        }
+
+        void ICleanupUtilities.Cleanup(Guid projectGuid)
+        {
+            foreach (var directory in Directory.GetDirectories(BaseDirectory,
+                "CodeElements.UpdateSystem.Backup*"))
+                Swal.low(() => Directory.Delete(directory, true));
+        }
+
+        void ICleanupUtilities.NoUpdatesFoundCleanup(Guid projectGuid)
+        {
+            //cleanup temp directory
+            var tempDirectory = new DirectoryInfo(Path.Combine(Path.GetTempPath(), $"CodeElements.UpdateSystem.{projectGuid:D}"));
+            Swal.low(() => tempDirectory.Delete(true));
         }
     }
 }

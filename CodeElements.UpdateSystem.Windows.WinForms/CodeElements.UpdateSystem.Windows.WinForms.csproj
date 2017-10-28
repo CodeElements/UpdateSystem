@@ -30,8 +30,19 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CommonMark, Version=0.1.0.0, Culture=neutral, PublicKeyToken=001ef8810438905d, processorArchitecture=MSIL">
+      <HintPath>..\packages\CommonMark.NET.0.15.1\lib\net45\CommonMark.dll</HintPath>
+    </Reference>
+    <Reference Include="HtmlRenderer, Version=1.5.0.5, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\HtmlRenderer.Core.1.5.0.5\lib\net45\HtmlRenderer.dll</HintPath>
+    </Reference>
+    <Reference Include="HtmlRenderer.WinForms, Version=1.5.0.6, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\HtmlRenderer.WinForms.1.5.0.6\lib\net45\HtmlRenderer.WinForms.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -40,8 +51,59 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
+    <Compile Include="Internal\Controls\BottomPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Internal\Controls\CaptionLabel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Internal\SearchUpdatesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Internal\SearchUpdatesForm.Designer.cs">
+      <DependentUpon>SearchUpdatesForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Internal\UpdatesAvailableForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Internal\UpdatesAvailableForm.Designer.cs">
+      <DependentUpon>UpdatesAvailableForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Internal\Utilities\FormatBytesConverter.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="UpdateControllerExtensions.cs" />
+    <Compile Include="WindowsFormsApplicationCloser.cs" />
+    <Compile Include="WinFormsPatcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CodeElements.UpdateSystem.Windows\CodeElements.UpdateSystem.Windows.csproj">
+      <Project>{61215d9c-b5d1-4add-ae5f-292d065117ab}</Project>
+      <Name>CodeElements.UpdateSystem.Windows</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CodeElements.UpdateSystem\CodeElements.UpdateSystem.csproj">
+      <Project>{33882c33-77f3-402f-b3dc-51db63868905}</Project>
+      <Name>CodeElements.UpdateSystem</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Internal\SearchUpdatesForm.resx">
+      <DependentUpon>SearchUpdatesForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Internal\UpdatesAvailableForm.resx">
+      <DependentUpon>UpdatesAvailableForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
