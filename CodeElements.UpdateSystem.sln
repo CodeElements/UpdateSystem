@@ -3,13 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeElements.UpdateSystem", "CodeElements.UpdateSystem\CodeElements.UpdateSystem.csproj", "{33882C33-77F3-402F-B3DC-51DB63868905}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeElements.UpdateSystem", "UpdateSystem\CodeElements.UpdateSystem.csproj", "{33882C33-77F3-402F-B3DC-51DB63868905}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeElements.UpdateSystem.Windows", "CodeElements.UpdateSystem.Windows\CodeElements.UpdateSystem.Windows.csproj", "{61215D9C-B5D1-4ADD-AE5F-292D065117AB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeElements.UpdateSystem.Windows", "UpdateSystem.Windows\CodeElements.UpdateSystem.Windows.csproj", "{61215D9C-B5D1-4ADD-AE5F-292D065117AB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeElements.UpdateSystem.Windows.RollbackApp", "CodeElements.UpdateSystem.Windows.RollbackApp\CodeElements.UpdateSystem.Windows.RollbackApp.csproj", "{2681F57D-2E4F-42C2-9EBF-B6567EECE4D8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeElements.UpdateSystem.Windows.RollbackApp", "UpdateSystem.Windows.RollbackApp\CodeElements.UpdateSystem.Windows.RollbackApp.csproj", "{2681F57D-2E4F-42C2-9EBF-B6567EECE4D8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeElements.UpdateSystem.Windows.WinForms", "CodeElements.UpdateSystem.Windows.WinForms\CodeElements.UpdateSystem.Windows.WinForms.csproj", "{BD40F55B-5DB2-4F01-9F8A-D1D5EF2CD9EE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeElements.UpdateSystem.Windows.WinForms", "UpdateSystem.Windows.WinForms\CodeElements.UpdateSystem.Windows.WinForms.csproj", "{BD40F55B-5DB2-4F01-9F8A-D1D5EF2CD9EE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{6DCDDF4E-D125-487E-BD24-6E60FEAAAFC9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeElements.UpdateSystem.Tests", "Tests\UpdateSystem.Tests\CodeElements.UpdateSystem.Tests.csproj", "{4DC061AA-DA1B-41A8-B352-1D16DE8B3C67}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,9 +37,16 @@ Global
 		{BD40F55B-5DB2-4F01-9F8A-D1D5EF2CD9EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD40F55B-5DB2-4F01-9F8A-D1D5EF2CD9EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD40F55B-5DB2-4F01-9F8A-D1D5EF2CD9EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DC061AA-DA1B-41A8-B352-1D16DE8B3C67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DC061AA-DA1B-41A8-B352-1D16DE8B3C67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DC061AA-DA1B-41A8-B352-1D16DE8B3C67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DC061AA-DA1B-41A8-B352-1D16DE8B3C67}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4DC061AA-DA1B-41A8-B352-1D16DE8B3C67} = {6DCDDF4E-D125-487E-BD24-6E60FEAAAFC9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9CADF9EB-0E3C-430C-B121-8F4C7DDC3F2F}

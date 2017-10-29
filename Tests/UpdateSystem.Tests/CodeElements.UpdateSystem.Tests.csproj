@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\CodeElements.UpdateSystem\CodeElements.UpdateSystem.csproj" />
+    <ProjectReference Include="..\..\UpdateSystem\CodeElements.UpdateSystem.csproj" />
   </ItemGroup>
 
 </Project>

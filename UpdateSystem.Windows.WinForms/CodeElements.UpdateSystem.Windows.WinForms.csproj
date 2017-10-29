@@ -81,11 +81,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CodeElements.UpdateSystem.Windows\CodeElements.UpdateSystem.Windows.csproj">
+    <ProjectReference Include="..\UpdateSystem.Windows\CodeElements.UpdateSystem.Windows.csproj">
       <Project>{61215d9c-b5d1-4add-ae5f-292d065117ab}</Project>
       <Name>CodeElements.UpdateSystem.Windows</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CodeElements.UpdateSystem\CodeElements.UpdateSystem.csproj">
+    <ProjectReference Include="..\UpdateSystem\CodeElements.UpdateSystem.csproj">
       <Project>{33882c33-77f3-402f-b3dc-51db63868905}</Project>
       <Name>CodeElements.UpdateSystem</Name>
     </ProjectReference>

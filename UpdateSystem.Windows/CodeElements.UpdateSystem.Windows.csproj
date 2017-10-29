@@ -42,7 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\CodeElements.UpdateSystem.Windows.RollbackApp\RollbackAppInfo.cs">
+    <Compile Include="..\UpdateSystem.Windows.RollbackApp\RollbackAppInfo.cs">
       <Link>Patcher\RollbackApp\RollbackAppInfo.cs</Link>
     </Compile>
     <Compile Include="EnvironmentApplicationCloser.cs" />
@@ -123,19 +123,18 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CodeElements.UpdateSystem\CodeElements.UpdateSystem.csproj">
-      <Project>{b74f4bae-da1f-45e0-b8dd-eb45b73b2833}</Project>
-      <Name>CodeElements.UpdateSystem</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="..\CodeElements.UpdateSystem.Windows.RollbackApp\bin\Release\CodeElements.UpdateSystem.Windows.RollbackApp.exe">
+    <EmbeddedResource Include="..\UpdateSystem.Windows.RollbackApp\bin\Release\CodeElements.UpdateSystem.Windows.RollbackApp.exe">
       <Link>Patcher\RollbackApp\CodeElements.UpdateSystem.Windows.RollbackApp.exe</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Content Include="logo.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\UpdateSystem\CodeElements.UpdateSystem.csproj">
+      <Project>{33882c33-77f3-402f-b3dc-51db63868905}</Project>
+      <Name>CodeElements.UpdateSystem</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

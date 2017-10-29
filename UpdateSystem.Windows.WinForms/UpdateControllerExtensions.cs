@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CodeElements.UpdateSystem.Core;
 using CodeElements.UpdateSystem.Extensions;
@@ -25,11 +26,9 @@ namespace CodeElements.UpdateSystem.Windows.WinForms
 
             if (searchResult.IsUpdateEnforced)
             {
-                (await searchResult.GetDownloader().Download()).Patch();
+                (await searchResult.GetDownloader().Download(CancellationToken.None)).Patch();
                 return;
             }
-
-
         }
     }
 }
