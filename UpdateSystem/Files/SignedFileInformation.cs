@@ -1,10 +1,4 @@
-﻿using Newtonsoft.Json;
-
-#if ZEROFORMATTABLE
-using ZeroFormatter;
-#endif
-
-namespace CodeElements.UpdateSystem.Files
+﻿namespace CodeElements.UpdateSystem.Files
 {
 	/// <summary>
 	///     Information about a file together with a signature
@@ -14,10 +8,6 @@ namespace CodeElements.UpdateSystem.Files
 		/// <summary>
 		///     The signature data
 		/// </summary>
-#if ZEROFORMATTABLE
-		[Index(StartIndex + 2)]
-#endif
-		[JsonProperty(PropertyName = "signature")]
-		public virtual byte[] Signature { get; set; }
+		public byte[] Signature { get; set; }
 	}
 }

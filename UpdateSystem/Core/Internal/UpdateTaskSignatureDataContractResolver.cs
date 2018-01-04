@@ -1,31 +1,33 @@
 ﻿using System.Reflection;
-using CodeElements.UpdateSystem.UpdateTasks.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 #if ELEMENTSCORE
 namespace CodeElements.UpdateSystem.UpdateTasks.Base
 {
-    public class UpdateTaskSignatureDataContractResolver : DefaultContractResolver
+    public class UpdateTaskSignatureDataContractResolver : CamelCasePropertyNamesContractResolver
     {
 #else
+using CodeElements.UpdateSystem.UpdateTasks.Base;
+
 namespace CodeElements.UpdateSystem.Core.Internal
 {
-    internal class UpdateTaskSignatureDataContractResolver : DefaultContractResolver
+    internal class UpdateTaskSignatureDataContractResolver : CamelCasePropertyNamesContractResolver
     {
 #endif
 
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
             var property = base.CreateProperty(member, memberSerialization);
-            switch (property.PropertyName)
-            {
-                case nameof(UpdateTask.Signature):
-                    property.ShouldSerialize = o => false;
-                    break;
-            }
+            if (property.PropertyName == ToCamelCase(nameof(UpdateTask.Signature)))
+                property.ShouldSerialize = o => false;
 
             return property;
+        }
+
+        private static string ToCamelCase(string name)
+        {
+            return char.ToLowerInvariant(name[0]) + name.Substring(1);
         }
     }
 }

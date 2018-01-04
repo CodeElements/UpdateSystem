@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-
 namespace CodeElements.UpdateSystem.Files.Operations
 {
 	/// <summary>
@@ -10,7 +8,6 @@ namespace CodeElements.UpdateSystem.Files.Operations
 		/// <summary>
 		///     The location of the file
 		/// </summary>
-		[JsonProperty(PropertyName = "target")]
 		public FileInformation Target { get; set; }
 
 		/// <summary>

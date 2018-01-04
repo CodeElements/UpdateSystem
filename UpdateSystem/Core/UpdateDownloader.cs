@@ -151,7 +151,7 @@ namespace CodeElements.UpdateSystem.Core
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var tempDirectory = _updateController.Environment.GetTempDirectory(_updateController.ProjectGuid);
+            var tempDirectory = _updateController.Environment.GetTempDirectory(_updateController.ProjectId);
             var deltaPatchDirectory = tempDirectory.CreateSubdirectory("deltaFiles");
 
             var filesDictionary = new Dictionary<Hash, FileInfo>();
@@ -241,31 +241,31 @@ namespace CodeElements.UpdateSystem.Core
                             }
                         });
 
-                        if (updateOperations.Count > 0)
-                        {
-                            //Dictionary: Current File => Target file
-                            var updates = updateOperations.ToDictionary(x => x.Value.Item2, y => y.Key);
-                            var response = await _updateController.HttpClient.PostAsync(
-                                new Uri(_updateController.UpdateSystemApiUri,
-                                    $"projects/{_updateController.ProjectGuid:N}/findDeltaPatches"),
-                                new StringContent(JsonConvert.SerializeObject(updates)), cancellationToken);
-                            if (response.StatusCode == HttpStatusCode.OK)
-                            {
-                                //Dictionary target hash => delta patches from source hash
-                                var patches =
-                                    JsonConvert.DeserializeObject<Dictionary<Hash, List<DeltaPatchInfo>>>(
-                                        await response.Content.ReadAsStringAsync());
-                                if (patches?.Count > 0)
-                                {
-                                    foreach (var patch in patches)
-                                    {
-                                        var updateOperation = updateOperations[patch.Key];
-                                        fileOperations.Remove(updateOperation.Item1);
-                                        fileOperations.Add(new DeltaPatchOperation{Patches = patch.Value, Target = updateOperation.Item1.Target});
-                                    }
-                                }
-                            } //else ignore, delta patches are not that important
-                        }
+                        //if (updateOperations.Count > 0)
+                        //{
+                        //    //Dictionary: Current File => Target file
+                        //    var updates = updateOperations.ToDictionary(x => x.Value.Item2, y => y.Key);
+                        //    var response = await _updateController.HttpClient.PostAsync(
+                        //        new Uri(_updateController.UpdateSystemApiUri,
+                        //            $"projects/{_updateController.ProjectId:N}/findDeltaPatches"),
+                        //        new StringContent(JsonConvert.SerializeObject(updates)), cancellationToken);
+                        //    if (response.StatusCode == HttpStatusCode.OK)
+                        //    {
+                        //        //Dictionary target hash => delta patches from source hash
+                        //        var patches =
+                        //            JsonConvert.DeserializeObject<Dictionary<Hash, List<DeltaPatchInfo>>>(
+                        //                await response.Content.ReadAsStringAsync());
+                        //        if (patches?.Count > 0)
+                        //        {
+                        //            foreach (var patch in patches)
+                        //            {
+                        //                var updateOperation = updateOperations[patch.Key];
+                        //                fileOperations.Remove(updateOperation.Item1);
+                        //                fileOperations.Add(new DeltaPatchOperation{Patches = patch.Value, Target = updateOperation.Item1.Target});
+                        //            }
+                        //        }
+                        //    } //else ignore, delta patches are not that important
+                        //}
                     }
                     else
                         fileOperations = _downloadable.Instructions.FileOperations;
@@ -328,7 +328,7 @@ namespace CodeElements.UpdateSystem.Core
                                             if (!deltaFile.Exists)
                                             {
                                                 await DownloadFile(new Uri(_updateController.UpdateSystemApiUri,
-                                                        $"projects/{_updateController.ProjectGuid:N}/download?patchId={deltaPatchInfo.PatchId}"), deltaFile, downloadBuffer,
+                                                        $"projects/{_updateController.ProjectId:N}/download?patchId={deltaPatchInfo.PatchId}"), deltaFile, downloadBuffer,
                                                     needDownload.Target.Length, processingItem, cancellationToken);
                                                 BytesDownloaded = dataDownloaded += needDownload.Target.Length;
                                             }
@@ -379,8 +379,7 @@ namespace CodeElements.UpdateSystem.Core
                             if (!tempFile.Exists)
                             {
                                 var downloadHash = await DownloadFile(
-                                    new Uri(_updateController.UpdateSystemApiUri,
-                                        $"projects/{_updateController.ProjectGuid:N}/download?file={needDownload.Target.Hash}"),
+                                    new Uri(_updateController.UpdateSystemApiUri, $"download?file={needDownload.Target.Hash}"),
                                     tempFile, downloadBuffer, needDownload.Target.Length, processingItem, cancellationToken);
                                 BytesDownloaded = dataDownloaded += needDownload.Target.Length;
 
@@ -461,7 +460,6 @@ namespace CodeElements.UpdateSystem.Core
 						return new Hash(sha256.Hash);
 					}
 #endif
-
 
                     // ReSharper disable once MethodSupportsCancellation
                     var writeOperation = gzipStream.WriteAsync(buffer, 0, read);

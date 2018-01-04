@@ -1,15 +1,28 @@
 ﻿using System.Collections.Generic;
+#if !ELEMENTSCORE
 using System.Linq;
 using Newtonsoft.Json;
+
+#endif
 
 namespace CodeElements.UpdateSystem.Core
 {
     /// <summary>
     ///     The result of an update search
     /// </summary>
-    public class UpdatePackageSearchResult : IDownloadable
+    public class UpdatePackageSearchResult
+#if !ELEMENTSCORE
+        : IDownloadable
+#endif
     {
+#if !ELEMENTSCORE
         private IUpdateController _updateController;
+
+        /// <summary>
+        ///     The update package that will be targeted (the final version after the patch process)
+        /// </summary>
+        [JsonIgnore]
+        public UpdatePackageInfo TargetPackage { get; private set; }
 
         /// <summary>
         ///     Set to true if an update is enforced. This may be because the current version was rolled back or because a newer
@@ -20,37 +33,51 @@ namespace CodeElements.UpdateSystem.Core
         public bool IsUpdateEnforced { get; private set; }
 
         /// <summary>
-        ///     Set to true if the current version must be rolled back. The target package is either a newer package if one was
-        ///     available or an older package.
-        /// </summary>
-        [JsonProperty("rollback")]
-        public bool Rollback { get; private set; }
-
-        /// <summary>
         ///     Set to true if an update package is available.
         /// </summary>
         [JsonIgnore]
         public bool IsUpdateAvailable { get; private set; }
+#endif
 
         /// <summary>
-        ///     The update package that will be targeted (the final version after the patch process)
+        ///     Set to true if the current version must be rolled back. The target package is either a newer package if one was
+        ///     available or an older package.
         /// </summary>
-        [JsonIgnore]
-        public UpdatePackageInfo TargetPackage { get; private set; }
+        public bool Rollback { get;
+#if !ELEMENTSCORE
+            private
+#endif
+            set; }
 
         /// <summary>
         ///     All update packages that are between the current version and the <see cref="TargetPackage" />. The last item is
         ///     always the <see cref="TargetPackage" /> and inbetween are the update packages that were skipped.
         /// </summary>
-        [JsonProperty("updatePackages")]
-        public List<UpdatePackageInfo> UpdatePackages { get; private set; }
+        public List<UpdatePackageInfo> UpdatePackages { get;
+#if !ELEMENTSCORE
+            private
+#endif
+                set; }
 
         /// <summary>
         ///     The instructions for the updater
         /// </summary>
-        [JsonProperty("updateInstructions")]
-        public UpdateInstructions Instructions { get; set; }
+        public UpdateInstructions Instructions { get;
+#if !ELEMENTSCORE
+            private
+#endif
+            set; }
 
+        /// <summary>
+        ///     The json web token to access further ressources
+        /// </summary>
+        public string Jwt { get;
+#if !ELEMENTSCORE
+            private
+#endif
+            set; }
+
+#if !ELEMENTSCORE
         /// <summary>
         ///     The update controller the search was made with
         /// </summary>
@@ -71,5 +98,6 @@ namespace CodeElements.UpdateSystem.Core
                     updatePackageInfo.ReleaseDate = updatePackageInfo.ReleaseDate.ToLocalTime();
             }
         }
+#endif
     }
 }

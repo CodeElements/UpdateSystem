@@ -219,7 +219,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
             {
                 //we do not fail the process here because the new update may fix that
                 _logger.Fatal(
-                    $"The update task {updateTask.TaskType} was not linked to an executer. Please fix that asap.");
+                    $"The update task {updateTask.Type} was not linked to an executer. Please fix that asap.");
                 return;
             }
 
@@ -229,7 +229,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
             }
             catch (Exception e)
             {
-                _logger.Error($"Exception occurred when executing task {updateTask.TaskType}: {e.Message}");
+                _logger.Error($"Exception occurred when executing task {updateTask.Type}: {e.Message}");
                 if (updateTask.IsImportantForUpdateProcess)
                     throw; //sorry bro
 
@@ -317,7 +317,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
 
         private IUpdateTaskExecuter GetExecuter(UpdateTask updateTask)
         {
-            switch (updateTask.TaskType)
+            switch (updateTask.Type)
             {
                 case UpdateTaskType.DeleteDirectory:
                     return new DeleteDirectoryTaskExecuter();
