@@ -345,6 +345,13 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
 
                 var targetFile = _environmentManager.TranslateFilename(deleteFileOperation.Target.Filename);
                 DeleteRevertable(targetFile);
+
+                var directory = new DirectoryInfo(Path.GetDirectoryName(targetFile));
+                if (!directory.EnumerateFiles("*", SearchOption.AllDirectories).Any())
+                {
+                    _logger.Info($"Directory {directory.FullName} was found empty, attempt to remove");
+                    Retry.Do(() => directory.Delete(true), TimeSpan.FromSeconds(2), 3, _logger);
+                }
             }
         }
 

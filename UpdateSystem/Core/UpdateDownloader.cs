@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -21,7 +20,7 @@ using Newtonsoft.Json;
 namespace CodeElements.UpdateSystem.Core
 {
     /// <summary>
-    /// The update downloader for downloading the update packages
+    ///     The update downloader for downloading the update packages
     /// </summary>
     public class UpdateDownloader : INotifyPropertyChanged
     {
@@ -35,7 +34,7 @@ namespace CodeElements.UpdateSystem.Core
         private long _totalBytesToDownload;
 
         /// <summary>
-        /// Initialize a new instance of <see cref="UpdateDownloader"/>
+        ///     Initialize a new instance of <see cref="UpdateDownloader" />
         /// </summary>
         /// <param name="downloadable">The information needed to download the required files</param>
         public UpdateDownloader(IDownloadable downloadable)
@@ -45,7 +44,7 @@ namespace CodeElements.UpdateSystem.Core
         }
 
         /// <summary>
-        /// Gets the number of bytes downloaded to the local computer.
+        ///     Gets the number of bytes downloaded to the local computer.
         /// </summary>
         public long BytesDownloaded
         {
@@ -61,7 +60,7 @@ namespace CodeElements.UpdateSystem.Core
         }
 
         /// <summary>
-        /// Gets the name of the file that is currently processed
+        ///     Gets the name of the file that is currently processed
         /// </summary>
         public string CurrentFilename
         {
@@ -77,7 +76,7 @@ namespace CodeElements.UpdateSystem.Core
         }
 
         /// <summary>
-        /// Gets the total number of bytes for the download operation.
+        ///     Gets the total number of bytes for the download operation.
         /// </summary>
         public long TotalBytesToDownload
         {
@@ -93,7 +92,7 @@ namespace CodeElements.UpdateSystem.Core
         }
 
         /// <summary>
-        /// The total progress
+        ///     The total progress
         /// </summary>
         public double Progress
         {
@@ -109,7 +108,7 @@ namespace CodeElements.UpdateSystem.Core
         }
 
         /// <summary>
-        /// The current action that is processing
+        ///     The current action that is processing
         /// </summary>
         public ProgressAction CurrentAction
         {
@@ -125,7 +124,7 @@ namespace CodeElements.UpdateSystem.Core
         }
 
         /// <summary>
-        /// The current download speed in bytes per second
+        ///     The current download speed in bytes per second
         /// </summary>
         public double DownloadSpeed
         {
@@ -144,7 +143,7 @@ namespace CodeElements.UpdateSystem.Core
         public event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>
-        /// Download the required files
+        ///     Download the required files
         /// </summary>
         /// <returns>Return an application patcher that can apply the updates from the downloaded files</returns>
         public async Task<ApplicationPatcher> Download(CancellationToken cancellationToken)
@@ -207,19 +206,17 @@ namespace CodeElements.UpdateSystem.Core
                     {
                         //we have to build our own operation list from the target files and the current file base
                         fileOperations = new List<IFileOperation>();
-                        var updateOperations = new Dictionary<Hash, Tuple<UpdateFileOperation, Hash>>(); //key hash is new file hash, hash in tuple is current hash
+                        var updateOperations =
+                            new Dictionary<Hash, Tuple<UpdateFileOperation, Hash>
+                            >(); //key hash is new file hash, hash in tuple is current hash
                         await Task.Run(() =>
                         {
                             foreach (var targetFile in _downloadable.Instructions.TargetFiles)
                             {
                                 var currentFile = _updateController.Environment.TranslateFilename(targetFile.Filename);
                                 if (!currentFile.Exists)
-                                {
                                     fileOperations.Add(new DownloadFileOperation {Target = targetFile});
-                                }
                                 else
-                                {
-                                    //if (currentFile.Length != targetFile.Length) - removed because we need the hash for the update operation
                                     using (var fileStream = currentFile.OpenRead())
                                     {
                                         var hash = new Hash(sha256.ComputeHash(fileStream));
@@ -231,7 +228,6 @@ namespace CodeElements.UpdateSystem.Core
                                                 new Tuple<UpdateFileOperation, Hash>(updateOperation, hash));
                                         }
                                     }
-                                }
 
                                 cancellationToken.ThrowIfCancellationRequested();
                                 scanFiles.Increment();
@@ -265,7 +261,9 @@ namespace CodeElements.UpdateSystem.Core
                         //}
                     }
                     else
+                    {
                         fileOperations = _downloadable.Instructions.FileOperations;
+                    }
 
                     var downloadOperations = fileOperations.OfType<INeedDownload>().ToList();
 
@@ -295,13 +293,12 @@ namespace CodeElements.UpdateSystem.Core
                             //may be because of an older download
                             Hash tempFileHash;
                             using (var fileStream = tempFile.OpenRead())
+                            {
                                 tempFileHash = new Hash(sha256.ComputeHash(fileStream));
+                            }
 
                             if (!tempFileHash.Equals(needDownload.Target.Hash))
-                            {
-                                //wrong hash
                                 tempFile.Delete();
-                            }
                         }
 
                         if (!tempFile.Exists)
@@ -309,7 +306,9 @@ namespace CodeElements.UpdateSystem.Core
                             CurrentFilename = Path.GetFileName(needDownload.Target.Filename);
                             if (needDownload is DeltaPatchOperation deltaPatchOperation)
                             {
-                                var sourceFile = _updateController.Environment.TranslateFilename(deltaPatchOperation.Target.Filename);
+                                var sourceFile =
+                                    _updateController.Environment.TranslateFilename(deltaPatchOperation.Target
+                                        .Filename);
                                 if (sourceFile.Exists)
                                     try
                                     {
@@ -337,9 +336,11 @@ namespace CodeElements.UpdateSystem.Core
 
                                             using (var originalFileStream = new FileStream(patchedFile.FullName,
                                                 FileMode.Open, FileAccess.Read))
-                                            using (var deltaFileStream = new FileStream(deltaFile.FullName, FileMode.Open,
+                                            using (var deltaFileStream = new FileStream(deltaFile.FullName,
+                                                FileMode.Open,
                                                 FileAccess.Read))
-                                            using (var outputStream = new FileStream(newFile.FullName, FileMode.CreateNew,
+                                            using (var outputStream = new FileStream(newFile.FullName,
+                                                FileMode.CreateNew,
                                                 FileAccess.ReadWrite))
                                             {
                                                 await Task.Run(() =>
@@ -377,8 +378,10 @@ namespace CodeElements.UpdateSystem.Core
                             if (!tempFile.Exists)
                             {
                                 var downloadHash = await DownloadFile(
-                                    new Uri(_updateController.UpdateSystemApiUri, $"download?file={needDownload.Target.Hash}"),
-                                    tempFile, downloadBuffer, needDownload.Target.Length, processingItem, cancellationToken);
+                                    new Uri(_updateController.UpdateSystemApiUri,
+                                        $"download?file={needDownload.Target.Hash}"),
+                                    tempFile, downloadBuffer, needDownload.Target.Length, processingItem,
+                                    cancellationToken);
                                 BytesDownloaded = dataDownloaded += needDownload.Target.Length;
 
                                 if (!downloadHash.Equals(needDownload.Target.Hash))

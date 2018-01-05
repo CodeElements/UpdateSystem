@@ -10,6 +10,7 @@ namespace CodeElements.UpdateSystem.Utilities
     ///     generating the CanConvert, ReadJson, and WriteJson methods, requiring the implementer only to define a strongly
     ///     typed Create method.
     /// </summary>
+    //https://stackoverflow.com/questions/8030538/how-to-implement-custom-jsonconverter-in-json-net-to-deserialize-a-list-of-base/8031283#8031283
     public abstract class JsonCreationConverter<T> : JsonConverter
     {
         public override bool CanWrite { get; } = false;

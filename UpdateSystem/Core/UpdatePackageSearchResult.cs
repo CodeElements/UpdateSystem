@@ -81,19 +81,6 @@ namespace CodeElements.UpdateSystem.Core
             set;
         }
 
-        /// <summary>
-        ///     The json web token to access further ressources
-        /// </summary>
-        [JsonProperty]
-        public string Jwt
-        {
-            get;
-#if !ELEMENTSCORE
-            private
-#endif
-            set;
-        }
-
 #if !ELEMENTSCORE
         /// <summary>
         ///     The update controller the search was made with

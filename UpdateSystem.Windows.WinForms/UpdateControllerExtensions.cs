@@ -11,7 +11,7 @@ namespace CodeElements.UpdateSystem.Windows.WinForms
     {
         public static async Task UpdateInteractively(this IUpdateController updateController, IWin32Window owner, bool showSearchDialog)
         {
-            var task = updateController.SearchForNewUpdatePackages();
+            var task = updateController.SearchForNewUpdatePackagesAsync();
             if (showSearchDialog)
             {
                 var progressForm = new SearchUpdatesForm();

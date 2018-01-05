@@ -23,6 +23,8 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.Reversion
                 return;
             if (File.Exists(DestinationFile))
                 File.Delete(DestinationFile);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(DestinationFile));
             File.Move(SourceFile, DestinationFile);
         }
 

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using CodeElements.UpdateSystem.Files;
 using CodeElements.UpdateSystem.Files.Operations;
 using CodeElements.UpdateSystem.UpdateTasks.Base;
@@ -15,6 +16,16 @@ namespace CodeElements.UpdateSystem.Core
     /// </summary>
     public class UpdateInstructions
     {
+        internal UpdateInstructions(List<SignedFileInformation> files)
+        {
+            TargetFiles = files.Cast<FileInformation>().ToList();
+            FileSignatures = files.GroupBy(x => x.Hash).ToDictionary(x => x.Key, x => x.First().Signature);
+        }
+
+        public UpdateInstructions()
+        {
+        }
+
         /// <summary>
         ///     The file operations that must be done. This property is only set when an update package with the exact version was
         ///     found

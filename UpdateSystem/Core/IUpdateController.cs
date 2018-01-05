@@ -16,6 +16,6 @@ namespace CodeElements.UpdateSystem.Core
         Uri UpdateSystemApiUri { get; }
         IVersionProvider VersionProvider { get; }
 
-        Task<UpdatePackageSearchResult> SearchForNewUpdatePackages();
+        Task<UpdatePackageSearchResult> SearchForNewUpdatePackagesAsync();
     }
 }
