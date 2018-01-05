@@ -173,7 +173,7 @@ namespace CodeElements.UpdateSystem.Core
 #if NETSTANDARD
                 using (var rsa = RSA.Create())
 #else
-				using (var rsa = new RSACryptoServiceProvider())
+				using (var rsa = new RSACng())
 #endif
                 using (var sha256 = SHA256.Create())
                 {
@@ -192,12 +192,9 @@ namespace CodeElements.UpdateSystem.Core
                         {
                             var hash = sha256.ComputeHash(
                                 Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateTask, serializerSettings)));
-#if NETSTANDARD
+
                             if (!rsa.VerifyHash(hash, updateTask.Signature, HashAlgorithmName.SHA256,
                                 RSASignaturePadding.Pss))
-#else
-						    if (!rsa.VerifyHash(hash, CryptoConfig.MapNameToOID("SHA256"), updateTask.Signature))
-#endif
                                 throw new InvalidOperationException("The signature of a task could not be validated.");
 
                             validateTasksProcessItem.Increment();
@@ -328,7 +325,8 @@ namespace CodeElements.UpdateSystem.Core
                                             if (!deltaFile.Exists)
                                             {
                                                 await DownloadFile(new Uri(_updateController.UpdateSystemApiUri,
-                                                        $"projects/{_updateController.ProjectId:N}/download?patchId={deltaPatchInfo.PatchId}"), deltaFile, downloadBuffer,
+                                                        $"projects/{_updateController.ProjectId:N}/download?patchId={deltaPatchInfo.PatchId}"),
+                                                    deltaFile, downloadBuffer,
                                                     needDownload.Target.Length, processingItem, cancellationToken);
                                                 BytesDownloaded = dataDownloaded += needDownload.Target.Length;
                                             }
@@ -396,14 +394,11 @@ namespace CodeElements.UpdateSystem.Core
 
                         CurrentAction = ProgressAction.ValidateFile;
 
-#if NETSTANDARD
                         if (!rsa.VerifyHash(fileHash.HashData, fileSignature, HashAlgorithmName.SHA256,
                             RSASignaturePadding.Pss))
-#else
-						if (!rsa.VerifyHash(fileHash.HashData, CryptoConfig.MapNameToOID("SHA256"), fileSignature))
-#endif
                             throw new InvalidOperationException(
                                 $"The signature of the file '{needDownload.Target.Filename}' ({fileHash}) could not be validated.");
+
 
                         filesDictionary.Add(fileHash, tempFile);
                         processingItem.Complete();
@@ -427,17 +422,23 @@ namespace CodeElements.UpdateSystem.Core
             }
         }
 
-        private async Task<Hash> DownloadFile(Uri uri, FileInfo fileInfo, byte[] buffer, int length, ProcessColumn processColumn, CancellationToken cancellationToken)
+        private async Task<Hash> DownloadFile(Uri uri, FileInfo fileInfo, byte[] buffer, int length,
+            ProcessColumn processColumn, CancellationToken cancellationToken)
         {
-            var response = await _updateController.HttpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            var response =
+                await _updateController.HttpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                throw await UpdateSystemResponseExtensions.GetResponseException(response, _updateController);
 
-            double actualLength = response.Content.Headers.ContentLength.Value;
-            var netStream = await response.Content.ReadAsStreamAsync();
+            //double actualLength = response.Content.Headers.ContentLength.Value;
 
             var lastUpdate = DateTime.UtcNow;
             var dataDownloadedSinceLastUpdate = 0;
             double currentSpeed = 0;
 
+            using (var netStream = await response.Content.ReadAsStreamAsync())
+            using (var countingStream = new CountingStreamWrapper(netStream))
             using (var fileStream = new FileStream(fileInfo.FullName, FileMode.CreateNew, FileAccess.Write))
 #if NETSTANDARD
             using (var hashStream =
@@ -446,11 +447,12 @@ namespace CodeElements.UpdateSystem.Core
 			using(var sha256 = new SHA256Cng())
 			using(var hashStream = new CryptoStream(fileStream, sha256, CryptoStreamMode.Write))
 #endif
-            using (var gzipStream = new GZipStream(hashStream, CompressionMode.Decompress, true))
+            using (var gzipStream = new GZipStream(countingStream, CompressionMode.Decompress, true))
             {
+                var sourceBytesDownloaded = BytesDownloaded;
                 while (true)
                 {
-                    var read = await netStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                    var read = await gzipStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
                     if (read == 0)
 #if NETSTANDARD
                         return new Hash(hashStream.IncrementalHash.GetHashAndReset());
@@ -462,11 +464,11 @@ namespace CodeElements.UpdateSystem.Core
 #endif
 
                     // ReSharper disable once MethodSupportsCancellation
-                    var writeOperation = gzipStream.WriteAsync(buffer, 0, read);
-                    var relativeBytesDownladed = (long) (read / actualLength * length);
-                    BytesDownloaded += relativeBytesDownladed;
-                    processColumn.Current += relativeBytesDownladed;
-                    dataDownloadedSinceLastUpdate += read;
+                    var writeOperation = hashStream.WriteAsync(buffer, 0, read);
+                    //var relativeBytesDownladed = (long) (read / actualLength * length);
+                    BytesDownloaded = sourceBytesDownloaded + countingStream.TotalDataRead;
+                    processColumn.Current = countingStream.TotalDataRead;
+                    dataDownloadedSinceLastUpdate += countingStream.LastDataRead;
 
                     if (DateTime.UtcNow - lastUpdate > TimeSpan.FromMilliseconds(100) || currentSpeed == 0)
                     {

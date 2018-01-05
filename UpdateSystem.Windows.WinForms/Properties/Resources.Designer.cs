@@ -61,6 +61,24 @@ namespace CodeElements.UpdateSystem.Windows.WinForms.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Checking for updates....
+        /// </summary>
+        internal static string SearchUpdatesForm_CheckingForUpdates {
+            get {
+                return ResourceManager.GetString("SearchUpdatesForm_CheckingForUpdates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to CodeElements - UpdateSystem.
+        /// </summary>
+        internal static string SearchUpdatesForm_Title {
+            get {
+                return ResourceManager.GetString("SearchUpdatesForm_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Apply delta patch on file &apos;{0}&apos;.
         /// </summary>
         internal static string UpdatesAvailableForm_ApplyDeltaPatch {
@@ -156,6 +174,15 @@ namespace CodeElements.UpdateSystem.Windows.WinForms.Properties {
         internal static string UpdatesAvailableForm_ReleaseDate {
             get {
                 return ResourceManager.GetString("UpdatesAvailableForm_ReleaseDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to New updates available!.
+        /// </summary>
+        internal static string UpdatesAvailableForm_Title {
+            get {
+                return ResourceManager.GetString("UpdatesAvailableForm_Title", resourceCulture);
             }
         }
         

@@ -7,6 +7,8 @@ namespace CodeElements.UpdateSystem.Windows.WinForms.Internal
         public SearchUpdatesForm()
         {
             InitializeComponent();
+            Text = Properties.Resources.SearchUpdatesForm_Title;
+            checkingLabel.Text = Properties.Resources.SearchUpdatesForm_CheckingForUpdates;
         }
     }
 }

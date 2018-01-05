@@ -9,6 +9,7 @@ using CodeElements.UpdateSystem.Windows.Patcher;
 using CodeElements.UpdateSystem.Windows.Patcher.Translations;
 using CodeElements.UpdateSystem.Windows.Patcher.Utilities;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace CodeElements.UpdateSystem.Windows
 {
@@ -62,7 +63,7 @@ namespace CodeElements.UpdateSystem.Windows
         internal static string TranslateFilename(string filename, string baseDirectory)
         {
             if (filename.StartsWith("%basedir%", StringComparison.OrdinalIgnoreCase))
-                return Path.Combine(baseDirectory, filename.Substring("%basedir%".Length));
+                return Path.Combine(baseDirectory, filename.Substring("%basedir%".Length + 1)); //+ 1 for the slash
             return Environment.ExpandEnvironmentVariables(filename);
         }
 
@@ -79,8 +80,11 @@ namespace CodeElements.UpdateSystem.Windows
 
             //copy patcher assembly
             var patcherAssembly = new FileInfo(Assembly.GetAssembly(typeof(WindowsPatcher)).Location);
-            patcherAssembly.CopyTo(Path.Combine(patcherDirectory.FullName,
-                Path.GetFileNameWithoutExtension(patcherAssembly.Name) + ".exe"));
+            var targetLocation = Path.Combine(patcherDirectory.FullName,
+                Path.GetFileNameWithoutExtension(patcherAssembly.Name) + ".exe");
+            if (File.Exists(targetLocation)) File.Delete(targetLocation);
+
+            patcherAssembly.CopyTo(targetLocation);
 
             //copy dependencies
             CopyFileSameName(Assembly.GetAssembly(typeof(UpdateController<>)).Location, patcherDirectory);
@@ -91,7 +95,7 @@ namespace CodeElements.UpdateSystem.Windows
             ActionConfig = patcherConfig;
             File.WriteAllText(Path.Combine(patcherDirectory.FullName, "patcher.cfg"),
                 JsonConvert.SerializeObject(this, typeof(WindowsPatcherConfig), Formatting.Indented,
-                    new JsonSerializerSettings()));
+                    Program.JsonSerializerSettings));
             arguments.Add("/config patcher.cfg");
 
             if (CustomUi != null)
@@ -121,7 +125,7 @@ namespace CodeElements.UpdateSystem.Windows
             var currentProcess = Process.GetCurrentProcess();
             arguments.Add("/hostProcess " + currentProcess.Id);
 
-            var startInfo = new ProcessStartInfo(patcherAssembly.FullName, string.Join(" ", arguments));
+            var startInfo = new ProcessStartInfo(patcherAssembly.FullName, "patch " + string.Join(" ", arguments));
             if (RunAsAdministrator)
                 startInfo.Verb = "runas";
 
@@ -133,9 +137,11 @@ namespace CodeElements.UpdateSystem.Windows
             _applicationCloser?.ExitApplication();
         }
 
-        private static void CopyFileSameName(string fileLocation, DirectoryInfo targetLocation)
+        private static void CopyFileSameName(string fileLocation, DirectoryInfo targetDirectory)
         {
-            File.Copy(fileLocation, Path.Combine(targetLocation.FullName, Path.GetFileName(fileLocation)));
+            var targetLocation = Path.Combine(targetDirectory.FullName, Path.GetFileName(fileLocation));
+            if (File.Exists(targetLocation)) File.Delete(targetLocation);
+            File.Copy(fileLocation, targetLocation);
         }
 
         void ICleanupUtilities.Cleanup(Guid projectGuid)
@@ -149,7 +155,8 @@ namespace CodeElements.UpdateSystem.Windows
         {
             //cleanup temp directory
             var tempDirectory = new DirectoryInfo(Path.Combine(Path.GetTempPath(), $"CodeElements.UpdateSystem.{projectGuid:D}"));
-            Swal.low(() => tempDirectory.Delete(true));
+            if (tempDirectory.Exists)
+                Swal.low(() => tempDirectory.Delete(true));
         }
     }
 }

@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
+
 #if !ELEMENTSCORE
 using System.Linq;
-using Newtonsoft.Json;
 
 #endif
 
@@ -43,39 +44,55 @@ namespace CodeElements.UpdateSystem.Core
         ///     Set to true if the current version must be rolled back. The target package is either a newer package if one was
         ///     available or an older package.
         /// </summary>
-        public bool Rollback { get;
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool Rollback
+        {
+            get;
 #if !ELEMENTSCORE
             private
 #endif
-            set; }
+            set;
+        }
 
         /// <summary>
         ///     All update packages that are between the current version and the <see cref="TargetPackage" />. The last item is
         ///     always the <see cref="TargetPackage" /> and inbetween are the update packages that were skipped.
         /// </summary>
-        public List<UpdatePackageInfo> UpdatePackages { get;
+        [JsonProperty]
+        public List<UpdatePackageInfo> UpdatePackages
+        {
+            get;
 #if !ELEMENTSCORE
             private
 #endif
-                set; }
+            set;
+        }
 
         /// <summary>
         ///     The instructions for the updater
         /// </summary>
-        public UpdateInstructions Instructions { get;
+        [JsonProperty]
+        public UpdateInstructions Instructions
+        {
+            get;
 #if !ELEMENTSCORE
             private
 #endif
-            set; }
+            set;
+        }
 
         /// <summary>
         ///     The json web token to access further ressources
         /// </summary>
-        public string Jwt { get;
+        [JsonProperty]
+        public string Jwt
+        {
+            get;
 #if !ELEMENTSCORE
             private
 #endif
-            set; }
+            set;
+        }
 
 #if !ELEMENTSCORE
         /// <summary>

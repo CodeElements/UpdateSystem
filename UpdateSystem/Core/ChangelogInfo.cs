@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Newtonsoft.Json;
 
 namespace CodeElements.UpdateSystem.Core
 {
@@ -10,7 +11,13 @@ namespace CodeElements.UpdateSystem.Core
 		/// <summary>
 		///     The language of the changelog
 		/// </summary>
-		public CultureInfo Language { get; set; }
+		public string Language { get; set; }
+
+        /// <summary>
+        ///     The culture of the changelog
+        /// </summary>
+        [JsonIgnore]
+	    public CultureInfo CultureInfo => new CultureInfo(Language);
 
 		/// <summary>
 		///     The content of the changelog, eventually formatted with MarkDown

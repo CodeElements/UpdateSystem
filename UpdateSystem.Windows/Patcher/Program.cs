@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
@@ -9,17 +10,25 @@ using CodeElements.UpdateSystem.Windows.Patcher.Reversion;
 using CodeElements.UpdateSystem.Windows.Patcher.Translations;
 using CodeElements.UpdateSystem.Windows.Patcher.UI;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace CodeElements.UpdateSystem.Windows.Patcher
 {
     internal static class Program
     {
+        public static JsonSerializerSettings JsonSerializerSettings =
+            new JsonSerializerSettings {ContractResolver = new CamelCasePropertyNamesContractResolver()};
+
         /// <summary>
         ///     The main entry point for the application.
         /// </summary>
         [STAThread]
         private static void Main(string[] args)
         {
+            if (!args.Any())
+                MessageBox.Show("Please supply an operation the patcher should execute.", "Error", MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+
             switch (args[0])
             {
                 case "patch":
@@ -55,7 +64,9 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
 
                     AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
 
-                    var config = JsonConvert.DeserializeObject<WindowsPatcherConfig>(File.ReadAllText(configFilename));
+                    var config = JsonConvert.DeserializeObject<WindowsPatcherConfig>(File.ReadAllText(configFilename),
+                        JsonSerializerSettings);
+
                     var hostProcess = Process.GetProcessById(hostProcessId);
                     var updater = new UpdaterCore(config, hostProcess, new WindowsPatcherTranslation(language));
 
@@ -94,7 +105,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                     }
 
                     var rollbackInfo =
-                        JsonConvert.DeserializeObject<RollbackInfo>(File.ReadAllText(rollbackFile.FullName));
+                        JsonConvert.DeserializeObject<RollbackInfo>(File.ReadAllText(rollbackFile.FullName), JsonSerializerSettings);
                     rollbackInfo.Rollback();
 
                     updater = new UpdaterCore(rollbackInfo.PatcherConfig, null, WindowsPatcherTranslation.Default);
@@ -104,7 +115,8 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
             }
         }
 
-        private static void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs unhandledExceptionEventArgs)
+        private static void CurrentDomainOnUnhandledException(object sender,
+            UnhandledExceptionEventArgs unhandledExceptionEventArgs)
         {
             if (File.Exists("rollbackInfo.json"))
             {
@@ -125,7 +137,8 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                     "\r\n\r\nThis application will now restart and initiate a rollback.", "Error", MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
 
-                var config = JsonConvert.DeserializeObject<WindowsPatcherConfig>(File.ReadAllText(commandLineArgs[Array.IndexOf(commandLineArgs, "/config") + 1]));
+                var config = JsonConvert.DeserializeObject<WindowsPatcherConfig>(
+                    File.ReadAllText(commandLineArgs[Array.IndexOf(commandLineArgs, "/config") + 1]), JsonSerializerSettings);
                 var updater = new UpdaterCore(config, null, WindowsPatcherTranslation.Default);
                 updater.CompleteUpdateProcess(true);
                 return;

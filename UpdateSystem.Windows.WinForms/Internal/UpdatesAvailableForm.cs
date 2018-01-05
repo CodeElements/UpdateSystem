@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -25,6 +26,7 @@ namespace CodeElements.UpdateSystem.Windows.WinForms.Internal
 
             tableLayoutPanel1.RowStyles[2].Height = 0;
 
+            Text = Properties.Resources.UpdatesAvailableForm_Title;
             installButton.Text = Properties.Resources.UpdatesAvailableForm_InstallUpdates;
             cancelButton.Text = Properties.Resources.UpdatesAvailableForm_Cancel;
             newUpdatesAvailableLabel.Text = updatePackageSearchResult.UpdatePackages.Count > 1
@@ -49,7 +51,7 @@ namespace CodeElements.UpdateSystem.Windows.WinForms.Internal
                 (builder, info) => builder.Append("# ").Append(Properties.Resources.UpdatesAvailableForm_Update)
                     .Append(" ").AppendLine(info.Version.ToString())
                     .Append(Properties.Resources.UpdatesAvailableForm_ReleaseDate).Append(": ")
-                    .AppendLine(info.ReleaseDate.ToString("D")).AppendLine("___").AppendLine(
+                    .AppendLine(info.ReleaseDate.ToString("D", CultureInfo.CurrentUICulture)).AppendLine("___").AppendLine(
                         string.IsNullOrWhiteSpace(info.Changelog.Content)
                             ? "_" + Properties.Resources.UpdatesAvailableForm_ChangelogIsEmpty + "_"
                             : info.Changelog.Content)).ToString();
@@ -96,25 +98,21 @@ namespace CodeElements.UpdateSystem.Windows.WinForms.Internal
             tableLayoutPanel1.RowStyles[2].Height = 50;
             _downloadCancellationTokenSource = new CancellationTokenSource();
 
-            ApplicationPatcher patcher;
             try
             {
-                patcher = await downloader.Download(_downloadCancellationTokenSource.Token);
+                var patcher = await downloader.Download(_downloadCancellationTokenSource.Token);
+                patcher.Patch();
             }
             catch (TaskCanceledException)
             {
                 DialogResult = DialogResult.Cancel;
-                return;
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.Message, Properties.Resources.UpdatesAvailableForm_Error, MessageBoxButtons.OK,
+                MessageBox.Show(this, e.Message, Properties.Resources.UpdatesAvailableForm_Error, MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
-                return;
             }
-
-            patcher.Patch();
         }
 
         private void DownloaderOnPropertyChanged(object sender, PropertyChangedEventArgs propertyChangedEventArgs)
@@ -194,17 +192,17 @@ p {
     font-size: 90%;
 }
 h1 {
-    font-size: 1.5em;
+    font-size: 1.25em;
     margin-top: 0.4em;
     margin-bottom: 0.2em;
 }
 h2 {
-    font-size: 1.5em;
+    font-size: 1.1em;
     margin-top: 0.6em;
     margin-bottom: 0.1em;
 }
 h4 {
-    font-size: 1.1em;
+    font-size: 1.05em;
     margin-top: 20px;
     margin-bottom: 5px;
 }

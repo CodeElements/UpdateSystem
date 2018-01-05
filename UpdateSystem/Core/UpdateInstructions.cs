@@ -19,7 +19,7 @@ namespace CodeElements.UpdateSystem.Core
         ///     The file operations that must be done. This property is only set when an update package with the exact version was
         ///     found
         /// </summary>
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public List<IFileOperation> FileOperations
         {
             get;
@@ -33,7 +33,7 @@ namespace CodeElements.UpdateSystem.Core
         ///     The target files. This property is only set when an update package with the exact version was not found. The
         ///     updater must decide by himself what has to be done
         /// </summary>
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public List<FileInformation> TargetFiles
         {
             get;
@@ -47,6 +47,7 @@ namespace CodeElements.UpdateSystem.Core
         ///     The update tasks. The update tasks are in chronological order, beginning with the lowest
         ///     <see cref="UpdateTask.ExecutionOrderNumber" /> going to the highest. This property may be null
         /// </summary>
+        [JsonProperty]
         public List<UpdateTask> Tasks
         {
             get;
@@ -61,7 +62,8 @@ namespace CodeElements.UpdateSystem.Core
         ///     set, the signatures of all files will be in the dictionary; if <see cref="FileOperations" /> is set, only the
         ///     signatures of the files that implement <see cref="INeedDownload" /> will be available.
         /// </summary>
-        public Dictionary<Hash, byte[]> FileSignatures
+        [JsonProperty]
+        public IDictionary<Hash, byte[]> FileSignatures
         {
             get;
 #if !ELEMENTSCORE

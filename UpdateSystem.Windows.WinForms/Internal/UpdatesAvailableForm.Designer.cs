@@ -32,14 +32,14 @@
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.panel1 = new System.Windows.Forms.Panel();
             this.panel2 = new System.Windows.Forms.Panel();
-            this.downloadProgressBar = new System.Windows.Forms.ProgressBar();
-            this.downloadStatsLabel = new System.Windows.Forms.Label();
+            this.updateActionLabel = new System.Windows.Forms.Label();
             this.downloadSpeedLabel = new System.Windows.Forms.Label();
+            this.downloadStatsLabel = new System.Windows.Forms.Label();
+            this.downloadProgressBar = new System.Windows.Forms.ProgressBar();
             this.newUpdatesAvailableLabel = new CodeElements.UpdateSystem.Windows.WinForms.Internal.Controls.CaptionLabel();
             this.bottomPanel1 = new CodeElements.UpdateSystem.Windows.WinForms.Internal.Controls.BottomPanel();
             this.cancelButton = new System.Windows.Forms.Button();
             this.installButton = new System.Windows.Forms.Button();
-            this.updateActionLabel = new System.Windows.Forms.Label();
             this.tableLayoutPanel1.SuspendLayout();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
@@ -64,6 +64,7 @@
             this.tableLayoutPanel1.Controls.Add(this.panel2, 0, 2);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 4;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 50F));
@@ -95,13 +96,23 @@
             this.panel2.Size = new System.Drawing.Size(569, 44);
             this.panel2.TabIndex = 5;
             // 
-            // downloadProgressBar
+            // updateActionLabel
             // 
-            this.downloadProgressBar.Location = new System.Drawing.Point(0, 20);
-            this.downloadProgressBar.Name = "downloadProgressBar";
-            this.downloadProgressBar.Size = new System.Drawing.Size(569, 23);
-            this.downloadProgressBar.TabIndex = 0;
-            this.downloadProgressBar.Value = 50;
+            this.updateActionLabel.AutoSize = true;
+            this.updateActionLabel.Location = new System.Drawing.Point(3, 4);
+            this.updateActionLabel.Name = "updateActionLabel";
+            this.updateActionLabel.Size = new System.Drawing.Size(131, 13);
+            this.updateActionLabel.TabIndex = 3;
+            this.updateActionLabel.Text = "Downloading file \'filename\'";
+            // 
+            // downloadSpeedLabel
+            // 
+            this.downloadSpeedLabel.AutoSize = true;
+            this.downloadSpeedLabel.Location = new System.Drawing.Point(500, 4);
+            this.downloadSpeedLabel.Name = "downloadSpeedLabel";
+            this.downloadSpeedLabel.Size = new System.Drawing.Size(67, 13);
+            this.downloadSpeedLabel.TabIndex = 2;
+            this.downloadSpeedLabel.Text = "| 1024 MiB/s";
             // 
             // downloadStatsLabel
             // 
@@ -112,14 +123,13 @@
             this.downloadStatsLabel.TabIndex = 1;
             this.downloadStatsLabel.Text = "10.56 MiB / 17.19 MiB";
             // 
-            // downloadSpeedLabel
+            // downloadProgressBar
             // 
-            this.downloadSpeedLabel.AutoSize = true;
-            this.downloadSpeedLabel.Location = new System.Drawing.Point(500, 4);
-            this.downloadSpeedLabel.Name = "downloadSpeedLabel";
-            this.downloadSpeedLabel.Size = new System.Drawing.Size(67, 13);
-            this.downloadSpeedLabel.TabIndex = 2;
-            this.downloadSpeedLabel.Text = "| 1024 MiB/s";
+            this.downloadProgressBar.Location = new System.Drawing.Point(0, 20);
+            this.downloadProgressBar.Name = "downloadProgressBar";
+            this.downloadProgressBar.Size = new System.Drawing.Size(569, 23);
+            this.downloadProgressBar.TabIndex = 0;
+            this.downloadProgressBar.Value = 50;
             // 
             // newUpdatesAvailableLabel
             // 
@@ -138,15 +148,16 @@
             this.bottomPanel1.Controls.Add(this.cancelButton);
             this.bottomPanel1.Controls.Add(this.installButton);
             this.bottomPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.bottomPanel1.Location = new System.Drawing.Point(3, 361);
+            this.bottomPanel1.Location = new System.Drawing.Point(0, 358);
+            this.bottomPanel1.Margin = new System.Windows.Forms.Padding(0);
             this.bottomPanel1.Name = "bottomPanel1";
-            this.bottomPanel1.Size = new System.Drawing.Size(569, 39);
+            this.bottomPanel1.Size = new System.Drawing.Size(575, 45);
             this.bottomPanel1.TabIndex = 2;
             // 
             // cancelButton
             // 
             this.cancelButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.cancelButton.Location = new System.Drawing.Point(336, 9);
+            this.cancelButton.Location = new System.Drawing.Point(342, 11);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new System.Drawing.Size(90, 23);
             this.cancelButton.TabIndex = 1;
@@ -157,22 +168,13 @@
             // installButton
             // 
             this.installButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.installButton.Location = new System.Drawing.Point(432, 9);
+            this.installButton.Location = new System.Drawing.Point(438, 11);
             this.installButton.Name = "installButton";
             this.installButton.Size = new System.Drawing.Size(128, 23);
             this.installButton.TabIndex = 0;
             this.installButton.Text = "Install updates";
             this.installButton.UseVisualStyleBackColor = true;
             this.installButton.Click += new System.EventHandler(this.installButton_Click);
-            // 
-            // updateActionLabel
-            // 
-            this.updateActionLabel.AutoSize = true;
-            this.updateActionLabel.Location = new System.Drawing.Point(3, 4);
-            this.updateActionLabel.Name = "updateActionLabel";
-            this.updateActionLabel.Size = new System.Drawing.Size(131, 13);
-            this.updateActionLabel.TabIndex = 3;
-            this.updateActionLabel.Text = "Downloading file \'filename\'";
             // 
             // UpdatesAvailableForm
             // 

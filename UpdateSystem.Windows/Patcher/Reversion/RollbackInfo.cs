@@ -31,7 +31,8 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.Reversion
 
         public void Save()
         {
-            File.WriteAllText(_path, JsonConvert.SerializeObject(this));
+            File.WriteAllText(_path,
+                JsonConvert.SerializeObject(this, Formatting.Indented, Program.JsonSerializerSettings));
         }
 
         public void Rollback()

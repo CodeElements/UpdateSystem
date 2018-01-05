@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -9,15 +10,14 @@ namespace CodeElements.UpdateSystem.Core.Internal
         private readonly List<IProcessColumn> _columns;
         private double _weight;
 
-        public ProcessCollection()
+        public ProcessCollection() : this(1)
         {
-            _columns = new List<IProcessColumn>();
-            Weight = 1;
         }
 
         public ProcessCollection(double weight)
         {
             Weight = weight;
+            _columns = new List<IProcessColumn>();
         }
 
         public double Current { get; private set; }
@@ -137,6 +137,9 @@ namespace CodeElements.UpdateSystem.Core.Internal
             {
                 if (Current != value)
                 {
+                    if (value > Maximum)
+                        throw new ArgumentException("the current value must not be greater than the maximum.");
+
                     _current = value;
                     OnPropertyChanged();
                 }

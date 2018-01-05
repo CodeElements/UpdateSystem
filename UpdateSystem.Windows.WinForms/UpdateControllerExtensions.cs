@@ -15,7 +15,7 @@ namespace CodeElements.UpdateSystem.Windows.WinForms
             if (showSearchDialog)
             {
                 var progressForm = new SearchUpdatesForm();
-                var task2 = task.ContinueWith(t => progressForm.Close(),
+                var _ = task.ContinueWith(t => progressForm.Close(),
                     TaskScheduler.FromCurrentSynchronizationContext());
                 progressForm.ShowDialog(owner);
             }
@@ -29,6 +29,9 @@ namespace CodeElements.UpdateSystem.Windows.WinForms
                 (await searchResult.GetDownloader().Download(CancellationToken.None)).Patch();
                 return;
             }
+
+            var updatesAvailableForm = new UpdatesAvailableForm(updateController, searchResult);
+            updatesAvailableForm.ShowDialog(owner);
         }
     }
 }

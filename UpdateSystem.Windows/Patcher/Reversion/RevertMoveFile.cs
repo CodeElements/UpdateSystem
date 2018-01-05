@@ -10,7 +10,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.Reversion
             DestinationFile = destinationFile;
         }
 
-        private RevertMoveFile()
+        public RevertMoveFile()
         {
         }
 

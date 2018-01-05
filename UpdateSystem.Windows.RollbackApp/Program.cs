@@ -22,7 +22,7 @@ namespace CodeElements.UpdateSystem.Windows.RollbackApp
             }
 
             if (MessageBox.Show(
-                    "It seems like someting went wrong when trying to update this application. Do you want to undo the changes that were made?",
+                    "It seems like someting went wrong when you tried to update this application. Do you want to undo the changes?",
                     "Update failed", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
                 return;
 

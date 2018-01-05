@@ -9,7 +9,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.Reversion
             Filename = filename;
         }
 
-        private RevertDeleteFile()
+        public RevertDeleteFile()
         {
         }
 

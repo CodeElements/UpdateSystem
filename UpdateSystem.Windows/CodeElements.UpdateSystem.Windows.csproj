@@ -8,8 +8,9 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>CodeElements.UpdateSystem.Windows</RootNamespace>
     <AssemblyName>CodeElements.UpdateSystem.Windows</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -47,6 +48,7 @@
     </Compile>
     <Compile Include="EnvironmentApplicationCloser.cs" />
     <Compile Include="FileExtensions.cs" />
+    <Compile Include="Patcher\Extensions\FileOperationExtensions.cs" />
     <Compile Include="Patcher\Translations\ImplementedUpdaterTranslation.cs" />
     <Compile Include="IWindowsUpdaterTranslation.cs" />
     <Compile Include="Patcher\EnvironmentManager.cs" />
@@ -87,6 +89,7 @@
     <Compile Include="Patcher\UpdateTasks\UpdateTaskExecuter.cs" />
     <Compile Include="Patcher\Utilities\Logger.cs" />
     <Compile Include="Patcher\Utilities\Retry.cs" />
+    <Compile Include="Patcher\Utilities\RevertableConverter.cs" />
     <Compile Include="Patcher\Utilities\StringExtensions.cs" />
     <Compile Include="Patcher\Utilities\Swal.cs" />
     <Compile Include="Patcher\Utilities\User.cs" />

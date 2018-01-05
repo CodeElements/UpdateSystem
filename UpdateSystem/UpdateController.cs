@@ -46,7 +46,7 @@ namespace CodeElements.UpdateSystem
             ChangelogLanguage = CultureInfo.CurrentUICulture;
             Settings = new TEnvironmentSettings();
             _httpClient = new Lazy<HttpClient>(() => new HttpClient());
-            _updateSystemApiUri = new Uri($"http://localhost:63195/v1/projects/{projectId:N}/u");
+            _updateSystemApiUri = new Uri($"http://localhost:63195/v1/projects/{projectId:N}/u/");
             _jsonSerializerSettings =
                 new JsonSerializerSettings {ContractResolver = new CamelCasePropertyNamesContractResolver()};
 
@@ -138,11 +138,11 @@ namespace CodeElements.UpdateSystem
 
             var response = await _httpClient.Value.GetAsync(uri);
             if (!response.IsSuccessStatusCode)
-                throw await GetException(response);
+                throw await UpdateSystemResponseExtensions.GetResponseException(response, this);
 
+            var result = await response.Content.ReadAsStringAsync();
             var updateSearchResult =
-                JsonConvert.DeserializeObject<UpdatePackageSearchResult>(
-                    await response.Content.ReadAsStringAsync(), _jsonSerializerSettings);
+                JsonConvert.DeserializeObject<UpdatePackageSearchResult>(result, _jsonSerializerSettings);
 
             httpClient.DefaultRequestHeaders.Clear();
             httpClient.DefaultRequestHeaders.Authorization =
@@ -153,33 +153,6 @@ namespace CodeElements.UpdateSystem
                 Settings?.NoUpdatesFoundCleanup(ProjectId);
 
             return updateSearchResult;
-        }
-
-        internal async Task<Exception> GetException(HttpResponseMessage response)
-        {
-            var result = await response.Content.ReadAsStringAsync();
-
-            RestError[] errors;
-            try
-            {
-                errors = JsonConvert.DeserializeObject<RestError[]>(result, _jsonSerializerSettings);
-            }
-            catch (Exception)
-            {
-                throw new HttpRequestException(result);
-            }
-
-            if (errors == null)
-                throw new HttpRequestException($"Invalid response (status code: {response.StatusCode}): {result}");
-
-            var error = errors[0];
-            switch (error.Type)
-            {
-                case ErrorTypes.ValidationError:
-                    return new ArgumentException(error.Message);
-                default:
-                    return new UpdateSystemRequestException(error);
-            }
         }
     }
 }

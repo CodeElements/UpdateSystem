@@ -137,7 +137,13 @@ ExecutePowerShellScript=Execute PowerShell script
 StartProcess=Start process "{0}"
 WaitingForProcessToExit=Waiting for process "{0}" to exit
 StartService=Start service "{0}"
-StopService=Stop service "{0}"</value>
+StopService=Stop service "{0}"
+RollbackUpdateProcess=Rolling back update process...
+Cancel=Cancel
+ApplyUpdates=Apply updates
+SureCancelUpdate=Are you sure that you want to cancel the update process?
+Warning=Warning
+WaitForApplicationToShutdown=Wait for application to shutdown</value>
   </data>
   <data name="GermanTranslation" xml:space="preserve">
     <value />

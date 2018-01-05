@@ -23,5 +23,6 @@
         string ApplyUpdates { get; }
         string SureCancelUpdate { get; }
         string Warning { get; }
+        string WaitForApplicationToShutdown { get; }
     }
 }

@@ -25,6 +25,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.Translations
         public string ApplyUpdates => GetValue();
         public string SureCancelUpdate => GetValue();
         public string Warning => GetValue();
+        public string WaitForApplicationToShutdown => GetValue();
 
 
         protected abstract string GetValue([CallerMemberName] string key = null);

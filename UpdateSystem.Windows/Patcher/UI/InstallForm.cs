@@ -23,7 +23,6 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.UI
             _updaterCore = updaterCore;
             _cancellationTokenSource = new CancellationTokenSource();
             updaterCore.PropertyChanged += UpdaterCoreOnPropertyChanged;
-            statusLabel.DataBindings.Add(nameof(Label.Text), updaterCore, nameof(UpdaterCore.Status));
 
             Task.Run(() => updaterCore.Update(_cancellationTokenSource.Token));
         }
@@ -33,8 +32,14 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.UI
             switch (propertyChangedEventArgs.PropertyName)
             {
                 case nameof(UpdaterCore.Progress):
-                    progressLabel.Text = _updaterCore.Progress.ToString("P");
-                    progressBar.Value = (int) (_updaterCore.Progress * 100);
+                    InvokeIfRequired(() =>
+                    {
+                        progressLabel.Text = _updaterCore.Progress.ToString("P");
+                        progressBar.Value = (int) (_updaterCore.Progress * 100);
+                    });
+                    break;
+                case nameof(UpdaterCore.Status):
+                    InvokeIfRequired(() => statusLabel.Text = _updaterCore.Status);
                     break;
             }
         }
@@ -46,13 +51,22 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.UI
 
         private void InstallForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            e.Cancel = true;
+            if (_updaterCore.IsShutdownRequested)
+                return;
 
+            e.Cancel = true; //is closed by the updater
             if (MessageBox.Show(this, _updaterCore.Translation.SureCancelUpdate, _updaterCore.Translation.Warning,
                     MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK)
                 return;
 
             _cancellationTokenSource.Cancel();
+        }
+
+        private void InvokeIfRequired(MethodInvoker action)
+        {
+            if (InvokeRequired)
+                Invoke(action);
+            else action();
         }
     }
 }

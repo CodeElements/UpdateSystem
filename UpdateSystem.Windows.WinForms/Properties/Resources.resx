@@ -117,6 +117,12 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="SearchUpdatesForm_CheckingForUpdates" xml:space="preserve">
+    <value>Checking for updates...</value>
+  </data>
+  <data name="SearchUpdatesForm_Title" xml:space="preserve">
+    <value>CodeElements - UpdateSystem</value>
+  </data>
   <data name="UpdatesAvailableForm_ApplyDeltaPatch" xml:space="preserve">
     <value>Apply delta patch on file '{0}'</value>
     <comment>{0} =filename</comment>
@@ -154,6 +160,9 @@
   </data>
   <data name="UpdatesAvailableForm_ReleaseDate" xml:space="preserve">
     <value>Release date</value>
+  </data>
+  <data name="UpdatesAvailableForm_Title" xml:space="preserve">
+    <value>New updates available!</value>
   </data>
   <data name="UpdatesAvailableForm_Update" xml:space="preserve">
     <value>Update</value>

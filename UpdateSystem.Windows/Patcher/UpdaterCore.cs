@@ -11,10 +11,12 @@ using System.Xml.Serialization;
 using CodeElements.UpdateSystem.Core;
 using CodeElements.UpdateSystem.Files.Operations;
 using CodeElements.UpdateSystem.UpdateTasks.Base;
+using CodeElements.UpdateSystem.Windows.Patcher.Extensions;
 using CodeElements.UpdateSystem.Windows.Patcher.Reversion;
 using CodeElements.UpdateSystem.Windows.Patcher.Translations;
 using CodeElements.UpdateSystem.Windows.Patcher.UpdateTasks;
 using CodeElements.UpdateSystem.Windows.Patcher.Utilities;
+using CodeElements.UpdateSystem.Windows.Properties;
 using CodeElements.UpdateSystem.Windows.RollbackApp;
 using Microsoft.Win32;
 
@@ -22,16 +24,17 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
 {
     internal class UpdaterCore : INotifyPropertyChanged
     {
+        private readonly EnvironmentManager _environmentManager;
         private readonly Process _hostProcess;
         private readonly Logger _logger;
         private readonly RollbackInfo _rollbackInfo;
+        private readonly StatusUpdater _statusUpdater;
         private readonly WindowsPatcherConfig _windowsPatcherConfig;
-        private readonly EnvironmentManager _environmentManager;
         private double _progress;
         private string _status;
-        private readonly StatusUpdater _statusUpdater;
 
-        public UpdaterCore(WindowsPatcherConfig windowsPatcherConfig, Process hostProcess, IPatcherTranslation translation)
+        public UpdaterCore(WindowsPatcherConfig windowsPatcherConfig, Process hostProcess,
+            IPatcherTranslation translation)
         {
             _windowsPatcherConfig = windowsPatcherConfig;
             _hostProcess = hostProcess;
@@ -49,6 +52,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
         }
 
         public IPatcherTranslation Translation { get; }
+        public bool IsShutdownRequested { get; private set; }
 
         public double Progress
         {
@@ -79,7 +83,8 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
         public event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>
-        /// Execute the update process. This method is absolutely fail-safe, everything is managed inside, it is not possible that this method throws an exception
+        ///     Execute the update process. This method is absolutely fail-safe, everything is managed inside, it is not possible
+        ///     that this method throws an exception
         /// </summary>
         /// <param name="cancellationToken">The cancellation token to cancel the update process</param>
         public void Update(CancellationToken cancellationToken)
@@ -87,10 +92,15 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
             var totalOps = 0;
             double currentOp = 0;
 
+            void UpdateProgress()
+            {
+                Progress = ++currentOp / totalOps;
+            }
+
             void UpdateProgressOrCancel()
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                Progress = ++currentOp / totalOps;
+                UpdateProgress();
             }
 
             var updateTasksBefore = _windowsPatcherConfig.ActionConfig.UpdateTasks
@@ -125,14 +135,29 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                     }
                 }
 
+                var cachedOperations = new List<IFileOperation>();
+                Dictionary<Hash, int> fileAccesses = null;
+
                 if (_windowsPatcherConfig.ActionConfig.FileOperations?.Count > 0)
                 {
                     _logger.Info($"Execute {_windowsPatcherConfig.ActionConfig.FileOperations.Count} file operations");
-                    var fileAccesses = _windowsPatcherConfig.ActionConfig.FileOperations.OfType<INeedDownload>()
+                    var applicationPath = Path.GetFullPath(_windowsPatcherConfig.ApplicationPath);
+
+                    fileAccesses = _windowsPatcherConfig.ActionConfig.FileOperations.OfType<INeedDownload>()
                         .GroupBy(x => x.Target.Hash).ToDictionary(x => x.Key, y => y.Count());
 
-                    foreach (var fileOperation in _windowsPatcherConfig.ActionConfig.FileOperations.OrderBy(x => x.OperationType))
+                    foreach (var fileOperation in _windowsPatcherConfig.ActionConfig.FileOperations.OrderBy(x =>
+                        x.OperationType))
                     {
+                        //if the file operation has anything to do with the application executable file and we replaced this file
+                        //we must cache the file operation so we can execute it at last
+                        if (_windowsPatcherConfig.ReplaceApplicationExecutable && fileOperation.GetTargetFiles().Any(x =>
+                            _environmentManager.TranslateFilename(x.Filename) == applicationPath))
+                        {
+                            cachedOperations.Add(fileOperation);
+                            continue;
+                        }
+
                         ExecuteFileOperation(fileOperation, fileAccesses);
                         UpdateProgressOrCancel();
                     }
@@ -144,6 +169,21 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                     foreach (var updateTask in updateTasksAfter)
                     {
                         ExecuteTask(updateTask);
+                        UpdateProgressOrCancel();
+                    }
+                }
+
+                if (_windowsPatcherConfig.ReplaceApplicationExecutable)
+                {
+                    _logger.Info("Revert replace application executable");
+                    Status = Translation.RestoreApplicationFile;
+                    foreach (var revertable in revertReplaceApplicationFile)
+                        Swal.low(() => revertable.Revert(), _logger);
+                    UpdateProgress();
+
+                    foreach (var cachedOperation in cachedOperations)
+                    {
+                        ExecuteFileOperation(cachedOperation, fileAccesses);
                         UpdateProgressOrCancel();
                     }
                 }
@@ -161,35 +201,9 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                 return;
             }
 
-            if (_windowsPatcherConfig.ReplaceApplicationExecutable)
-            {
-                _logger.Info("Revert replace application executable");
-                Status = Translation.RestoreApplicationFile;
-                foreach (var revertable in revertReplaceApplicationFile)
-                    Swal.low(() => revertable.Revert(), _logger);
-                Progress += 1;
-            }
-
             Status = Translation.Cleanup;
-            Progress += 1;
+            UpdateProgress();
             CompleteUpdateProcess(false);
-        }
-
-        public void CleanupTempDirectory()
-        {
-            try
-            {
-                _logger.Info("Delete temp directory for reversion");
-                Retry.Do(() => _environmentManager.RevertTempDirectory.Delete(true), TimeSpan.FromSeconds(2), 3,
-                    _logger);
-            }
-            catch (Exception)
-            {
-                _logger.Error("Deleting temp directory failed. Add RunOnce entry to delete that directory.");
-                //https://stackoverflow.com/a/27037195/4166138
-                Swal.low(() => AddRunOnceExecution("CodeElements.UpdateSystem.DeleteRollbackDirectory",
-                    $"rmdir /s /q \"{_environmentManager.RevertTempDirectory.FullName}\""), _logger);
-            }
         }
 
         public void CompleteUpdateProcess(bool failed)
@@ -208,8 +222,38 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                     arguments == null ? null : string.Join(" ", arguments.Select(x => "\"" + x + "\"")));
             }
 
-            Process.Start("cmd.exe", $"/C choice /C Y /N /D Y /T 10 & rmdir /s /q \"{_windowsPatcherConfig.ActionConfig.TempDirectory}\"");
+            //delete the temp directory after 10 seconds
+            Process.Start(
+                new ProcessStartInfo("cmd.exe",
+                    $"/C choice /C Y /N /D Y /T 10 & rmdir /s /q \"{_windowsPatcherConfig.ActionConfig.TempDirectory}\"")
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+            IsShutdownRequested = true;
             Application.Exit();
+        }
+
+        public void CleanupTempDirectory()
+        {
+            try
+            {
+                _logger.Info("Delete temp directory for reversion");
+                Retry.Do(() =>
+                    {
+                        _environmentManager.RevertTempDirectory.Refresh();
+                        if (_environmentManager.RevertTempDirectory.Exists)
+                            _environmentManager.RevertTempDirectory.Delete(true);
+                    }, TimeSpan.FromSeconds(2), 3,
+                    _logger);
+            }
+            catch (Exception)
+            {
+                _logger.Error("Deleting temp directory failed. Add RunOnce entry to delete that directory.");
+                //https://stackoverflow.com/a/27037195/4166138
+                Swal.low(() => AddRunOnceExecution("CodeElements.UpdateSystem.DeleteRollbackDirectory",
+                    $"rmdir /s /q \"{_environmentManager.RevertTempDirectory.FullName}\""), _logger);
+            }
         }
 
         private void ExecuteTask(UpdateTask updateTask)
@@ -233,7 +277,8 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                 if (updateTask.IsImportantForUpdateProcess)
                     throw; //sorry bro
 
-                _logger.Warning("Luckily the task was not very important for the update process, just continue with the next task");
+                _logger.Warning(
+                    "Luckily the task was not very important for the update process, just continue with the next task");
                 return;
             }
 
@@ -250,7 +295,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                 if (!sourceFile.Exists)
                     throw new InvalidOperationException("The source file was not found.");
 
-                for (int i = 0; i < moveFileOperation.Targets.Count; i++)
+                for (var i = 0; i < moveFileOperation.Targets.Count; i++)
                 {
                     var targetFile = moveFileOperation.Targets[i];
                     _statusUpdater.UpdateStatus(Translation.MoveFile, sourceFile.Name,
@@ -348,22 +393,28 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
             var newApplicationFile = FileExtensions.MakeUnique(_windowsPatcherConfig.ApplicationPath);
             _logger.Debug("Temporary application path: " + newApplicationFile + ". Attempt to move file.");
 
-            void FileMoveAction() => File.Move(_windowsPatcherConfig.ApplicationPath, newApplicationFile);
+            void FileMoveAction()
+            {
+                File.Move(_windowsPatcherConfig.ApplicationPath, newApplicationFile);
+            }
 
             var result = new List<IRevertable>();
             try
             {
                 Retry.Do(FileMoveAction, TimeSpan.FromSeconds(2), 3, _logger);
             }
-            catch (ArrayTypeMismatchException)
+            catch (IOException)
             {
                 if (_hostProcess != null && !_hostProcess.HasExited)
                 {
                     _logger.Error(
                         $"Moving temp file failed and host process (PID: {_hostProcess.Id}) is still running. Wait 10 seconds for the exit");
+
+                    Status = Translation.ReplaceApplicationFile;
                     if (_hostProcess.WaitForExit(10000))
                     {
                         _logger.Info("Process exited, retry moving file now.");
+                        Status = Translation.ReplaceApplicationFile;
                         try
                         {
                             Retry.Do(FileMoveAction, TimeSpan.FromSeconds(2), 3, _logger);
@@ -396,11 +447,13 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                 PatcherPath = Application.ExecutablePath,
                 RequireAdministratorPrivileges = User.IsAdministrator
             };
+
+            var rollbackInfoFile = Path.Combine(Path.GetDirectoryName(_windowsPatcherConfig.ApplicationPath),
+                "CodeElements.UpdateSystem.RollbackApp.Info.xml");
+
             try
             {
-                using (var fileStream = new FileStream("CodeElements.UpdateSystem.RollbackApp.Info.xml",
-                    FileMode.Create,
-                    FileAccess.Write))
+                using (var fileStream = new FileStream(rollbackInfoFile, FileMode.Create, FileAccess.Write))
                     new XmlSerializer(typeof(RollbackAppInfo)).Serialize(fileStream, rollbackAppInfo);
             }
             catch (Exception e)
@@ -409,14 +462,13 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                 return result; //we can just continue because this operation shouldn't make the update process fail
             }
 
-            var deleteRollbackInfoFile =
-                new RevertDeleteFile(Path.GetFullPath("CodeElements.UpdateSystem.RollbackApp.Info.xml"));
+            var deleteRollbackInfoFile = new RevertDeleteFile(rollbackInfoFile);
             result.Add(deleteRollbackInfoFile);
             _rollbackInfo.AppendOperation(deleteRollbackInfoFile);
 
             //that file is automatically deleted by the move file operation
             File.WriteAllBytes(_windowsPatcherConfig.ApplicationPath,
-                CodeElements.UpdateSystem.Windows.Properties.Resources.CodeElements_UpdateSystem_Windows_RollbackApp);
+                Resources.CodeElements_UpdateSystem_Windows_RollbackApp);
 
             return result;
         }
@@ -431,12 +483,10 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
             {
                 var existingValues = registryKey.GetValueNames();
                 var newName = name;
-                for (int i = 1; ; i++)
-                {
+                for (var i = 1;; i++)
                     if (Array.IndexOf(existingValues, newName) > -1)
                         newName = name + " (" + i + ")";
                     else break;
-                }
 
                 registryKey.SetValue(newName, command, RegistryValueKind.String);
             }
