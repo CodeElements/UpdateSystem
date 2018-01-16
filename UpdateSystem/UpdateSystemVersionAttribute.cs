@@ -12,7 +12,7 @@ namespace CodeElements.UpdateSystem
 		///     Initializes a new instance of the <see cref="UpdateSystemVersionAttribute" /> class.
 		/// </summary>
 		/// <param name="version">The version to use.</param>
-		public UpdateSystemVersionAttribute(SemVersion version)
+		public UpdateSystemVersionAttribute(string version)
 		{
 			Version = version;
 		}

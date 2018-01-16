@@ -1,22 +1,37 @@
-﻿using System;
+﻿#if !NETSTANDARD
 using System.Diagnostics;
 using System.IO;
+
+#else
+using System.Linq;
+
+#endif
+using System;
 using System.Runtime.InteropServices;
+using CodeElements.UpdateSystem.Core.Internal;
 
 namespace CodeElements.UpdateSystem.Utilities
 {
     internal class OperatingSystemProvider
     {
 #if NETSTANDARD
-        public static int GetOperatingSystemType()
+        public static OperatingSystemInfo GetInfo()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return 32; //Windows (Other)
+            {
+                var description = RuntimeInformation.OSDescription;
+                var versionPart = description.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries).Last();
 
-            return 106; //Linux (Other)
+                return new OperatingSystemInfo(OperatingSystemType.Windows, Version.Parse(versionPart));
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return new OperatingSystemInfo(OperatingSystemType.OSX, null);
+            
+            return new OperatingSystemInfo(OperatingSystemType.Linux, null);
         }
 #else
-        public static int GetOperatingSystemType()
+        public static OperatingSystemInfo GetInfo()
         {
             var osVersion = Environment.OSVersion;
             switch (osVersion.Platform)
@@ -36,26 +51,19 @@ namespace CodeElements.UpdateSystem.Utilities
                     var fileVersion =
                         FileVersionInfo.GetVersionInfo(
                             Path.Combine(Environment.SystemDirectory, "kernel32.dll"));
-                    switch (fileVersion.ProductMajorPart)
-                    {
-                        case 6:
-                            if (fileVersion.FileMinorPart == 0)
-                                return isServer ? 20 : 1; //Windows Server 2008 | Windows Vista
-                            else if (fileVersion.FileMinorPart == 1)
-                                return isServer ? 20 : 2; //Windows Server 2008 R2 | Windows 7
-                            else //greater than 1
-                                return isServer ? 21 : 3; //Windows Server 2012 | Windows 8/8.1
-                        case 10:
-                            return isServer ? 22 : 4; //Windows Server 2016 | Windows 10
-                        default:
-                            return 32; //Windows (Other)
-                    }
+
+                    return new OperatingSystemInfo(
+                        isServer ? OperatingSystemType.WindowsServer : OperatingSystemType.Windows,
+                        new Version(fileVersion.ProductMajorPart, fileVersion.ProductMinorPart,
+                            fileVersion.ProductBuildPart, 0));
             }
 
+            //that should not happen as we are on .Net 4.6 that should not run on Linux (expect using Mono, but the .Net Standard version would
+            //be better then)
             //https://stackoverflow.com/questions/5116977/how-to-check-the-os-version-at-runtime-e-g-windows-or-linux-without-using-a-con
             //int p = (int) Environment.OSVersion.Platform;
             //if (p == 4 || p == 6 || p == 128)
-            return 106; //Linux (Other)
+            return new OperatingSystemInfo(OperatingSystemType.Linux, osVersion.Version);
         }
 
         [DllImport("kernel32")]

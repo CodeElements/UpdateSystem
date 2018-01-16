@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace CodeElements.UpdateSystem.Utilities
 {
-    public class CountingStreamWrapper : Stream
+    internal class CountingStreamWrapper : Stream
     {
         private readonly Stream _baseStream;
 

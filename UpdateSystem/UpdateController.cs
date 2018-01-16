@@ -131,19 +131,22 @@ namespace CodeElements.UpdateSystem
                 throw new ArgumentException("A maximum of 10 version filters is allowed.");
 
             var httpClient = _httpClient.Value;
+            var version = VersionProvider.GetVersion();
+            HttpClientSetHeaders(version);
+
+            httpClient.DefaultRequestHeaders.AcceptLanguage.Add(
+                new StringWithQualityHeaderValue(ChangelogLanguage.TwoLetterISOLanguageName));
             try
             {
-                if (versionFilter?.Length > 0)
-                    httpClient.DefaultRequestHeaders.Add("VersionFilter", JsonConvert.SerializeObject(versionFilter));
-
-                var version = VersionProvider.GetVersion();
-                HttpClientSetUserSession(version);
-
                 var uri = new Uri(_updateSystemApiUri, $"packages/{Uri.EscapeDataString(version.ToString())}/check");
 
                 var platforms = PlatformProvider?.GetEncodedPlatforms();
                 if (platforms != null)
                     uri = uri.AddQueryParameters("platforms", platforms.Value.ToString());
+
+                if (versionFilter?.Length > 0)
+                    uri = uri.AddQueryParameters("versionFilter",
+                        Uri.EscapeDataString(JsonConvert.SerializeObject(versionFilter)));
 
                 var response = await httpClient.GetAsync(uri);
                 if (!response.IsSuccessStatusCode)
@@ -165,7 +168,7 @@ namespace CodeElements.UpdateSystem
             }
             finally
             {
-                httpClient.DefaultRequestHeaders.Remove("VersionFilter");
+                httpClient.DefaultRequestHeaders.AcceptLanguage.Clear();
             }
         }
 
@@ -176,7 +179,7 @@ namespace CodeElements.UpdateSystem
         public async Task<UpdatePackageFilebase> RepairAsync()
         {
             var version = VersionProvider.GetVersion();
-            HttpClientSetUserSession(version);
+            HttpClientSetHeaders(version);
 
             var uri = new Uri(_updateSystemApiUri, $"packages/{Uri.EscapeDataString(version.ToString())}/files");
 
@@ -197,17 +200,19 @@ namespace CodeElements.UpdateSystem
             return new UpdatePackageFilebase(jwtResponse.Result, this, version);
         }
 
-        private void HttpClientSetUserSession(SemVersion version)
+        private void HttpClientSetHeaders(SemVersion version)
         {
-            _httpClient.Value.DefaultRequestHeaders.Remove("UserSession");
-            _httpClient.Value.DefaultRequestHeaders.Add("UserSession",
-                JsonConvert.SerializeObject(new UserSessionDto
-                {
-                    OperatingSystem = OperatingSystemProvider.GetOperatingSystemType(),
-                    HardwareId = new Hash(LicenseSystemHardwareId ?? HardwareIdGenerator.GenerateHardwareId()),
-                    UserLanguage = ChangelogLanguage.TwoLetterISOLanguageName,
-                    Version = version
-                }));
+            var headers = _httpClient.Value.DefaultRequestHeaders;
+            headers.Clear();
+
+            var os = OperatingSystemProvider.GetInfo();
+            var hwid = new Hash(LicenseSystemHardwareId ?? HardwareIdGenerator.GenerateHardwareId());
+
+            headers.UserAgent.Add(new ProductInfoHeaderValue("CodeElementsUpdateSystem", "1.0"));
+            headers.UserAgent.Add(new ProductInfoHeaderValue(
+                $"({os.OperatingSystem + " " + os.Version.ToString(3)}; {CultureInfo.CurrentUICulture})"));
+            headers.UserAgent.Add(new ProductInfoHeaderValue("app", version.ToString(true)));
+            headers.UserAgent.Add(new ProductInfoHeaderValue($"({hwid})"));
         }
 
         private void HttpClientSetJwt<T>(JwtResponse<T> jwtResponse)

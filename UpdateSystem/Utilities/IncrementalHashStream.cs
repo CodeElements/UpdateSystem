@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CodeElements.UpdateSystem.Utilities
 {
-	public class IncrementalHashStream : Stream
+	internal class IncrementalHashStream : Stream
 	{
 		private readonly Stream _stream;
 
