@@ -22,9 +22,9 @@ namespace CodeElements.UpdateSystem
     public class UpdateController<TEnvironmentSettings> : IUpdateController
         where TEnvironmentSettings : IEnvironmentManager, new()
     {
+        private Uri UpdateSystemApiUri => new Uri($"http://localhost:58830/v1/projects/{ProjectId:N}/u/");
         private readonly Lazy<HttpClient> _httpClient;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
-        private readonly Uri _updateSystemApiUri;
 
         /// <summary>
         ///     Initialize a new instance of <see cref="UpdateController{TEnvironmentSettings}" />
@@ -33,7 +33,8 @@ namespace CodeElements.UpdateSystem
         /// <param name="httpMessageHandler">A http message handler used for all calls to the CodeElements servers</param>
         public UpdateController(Guid projectId, HttpMessageHandler httpMessageHandler) : this(projectId)
         {
-            _httpClient = new Lazy<HttpClient>(() => new HttpClient(httpMessageHandler));
+            _httpClient =
+                new Lazy<HttpClient>(() => new HttpClient(httpMessageHandler) {BaseAddress = UpdateSystemApiUri});
         }
 
         /// <summary>
@@ -41,11 +42,13 @@ namespace CodeElements.UpdateSystem
         /// </summary>
         /// <param name="projectId">The <see cref="Guid" /> of the project</param>
         /// <param name="httpClient">
-        ///     The http client that should be used. Please note that the headers will be modified and must
+        ///     The http client that should be used. Please note that the headers aswell as the
+        ///     <see cref="HttpClient.BaseAddress" /> will be modified and must
         ///     persist.
         /// </param>
         public UpdateController(Guid projectId, HttpClient httpClient) : this(projectId)
         {
+            httpClient.BaseAddress = UpdateSystemApiUri;
             _httpClient = new Lazy<HttpClient>(() => httpClient);
         }
 
@@ -59,8 +62,7 @@ namespace CodeElements.UpdateSystem
             VersionProvider = new AssemblyVersionProvider();
             ChangelogLanguage = CultureInfo.CurrentUICulture;
             Settings = new TEnvironmentSettings();
-            _httpClient = new Lazy<HttpClient>(() => new HttpClient());
-            _updateSystemApiUri = new Uri($"http://localhost:63195/v1/projects/{projectId:N}/u/");
+            _httpClient = new Lazy<HttpClient>(() => new HttpClient {BaseAddress = UpdateSystemApiUri});
             _jsonSerializerSettings =
                 new JsonSerializerSettings {ContractResolver = new CamelCasePropertyNamesContractResolver()};
 
@@ -95,8 +97,8 @@ namespace CodeElements.UpdateSystem
         public CultureInfo ChangelogLanguage { get; set; }
 
         /// <summary>
-        ///     If the update system is connected to a license system, this property must be set to the hardware id of the license
-        ///     system for the authentication
+        ///     If the update system is connected to a license system, this property can be set to the custom hardware id so the
+        ///     client can be identified. If left null, the default algorithm will be used.
         /// </summary>
         public byte[] LicenseSystemHardwareId { get; set; }
 
@@ -113,7 +115,6 @@ namespace CodeElements.UpdateSystem
         IEnvironmentManager IUpdateController.Environment => Settings;
         HttpClient IUpdateController.HttpClient => _httpClient.Value;
         JsonSerializerSettings IUpdateController.JsonSerializerSettings => _jsonSerializerSettings;
-        Uri IUpdateController.UpdateSystemApiUri => _updateSystemApiUri;
 
         /// <summary>
         ///     The current version provider that is used to retrieve the application version
@@ -138,7 +139,7 @@ namespace CodeElements.UpdateSystem
                 new StringWithQualityHeaderValue(ChangelogLanguage.TwoLetterISOLanguageName));
             try
             {
-                var uri = new Uri(_updateSystemApiUri, $"packages/{Uri.EscapeDataString(version.ToString())}/check");
+                var uri = new Uri($"packages/{Uri.EscapeDataString(version.ToString())}/check", UriKind.Relative);
 
                 var platforms = PlatformProvider?.GetEncodedPlatforms();
                 if (platforms != null)
@@ -181,7 +182,7 @@ namespace CodeElements.UpdateSystem
             var version = VersionProvider.GetVersion();
             HttpClientSetHeaders(version);
 
-            var uri = new Uri(_updateSystemApiUri, $"packages/{Uri.EscapeDataString(version.ToString())}/files");
+            var uri = new Uri($"packages/{Uri.EscapeDataString(version.ToString())}/files");
 
             var platforms = PlatformProvider?.GetEncodedPlatforms();
             if (platforms != null)

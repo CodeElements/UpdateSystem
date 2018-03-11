@@ -13,7 +13,6 @@ namespace CodeElements.UpdateSystem.Core
         IEnvironmentManager Environment { get; }
         HttpClient HttpClient { get; }
         JsonSerializerSettings JsonSerializerSettings { get; }
-        Uri UpdateSystemApiUri { get; }
         IVersionProvider VersionProvider { get; }
 
         Task<UpdatePackageSearchResult> SearchForNewUpdatePackagesAsync();

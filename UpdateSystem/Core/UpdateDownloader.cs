@@ -206,9 +206,10 @@ namespace CodeElements.UpdateSystem.Core
                     {
                         //we have to build our own operation list from the target files and the current file base
                         fileOperations = new List<IFileOperation>();
+
+                        //key hash is new file hash, hash in tuple is current hash
                         var updateOperations =
-                            new Dictionary<Hash, Tuple<UpdateFileOperation, Hash>
-                            >(); //key hash is new file hash, hash in tuple is current hash
+                            new Dictionary<Hash, Tuple<UpdateFileOperation, Hash>>();
                         await Task.Run(() =>
                         {
                             foreach (var targetFile in _downloadable.Instructions.TargetFiles)
@@ -323,10 +324,11 @@ namespace CodeElements.UpdateSystem.Core
                                                 deltaPatchInfo.PatchId.ToString()));
                                             if (!deltaFile.Exists)
                                             {
-                                                await DownloadFile(new Uri(_updateController.UpdateSystemApiUri,
+                                                await DownloadFile(
+                                                    new Uri(
                                                         $"projects/{_updateController.ProjectId:N}/download?patchId={deltaPatchInfo.PatchId}"),
-                                                    deltaFile, downloadBuffer,
-                                                    needDownload.Target.Length, processingItem, cancellationToken);
+                                                    deltaFile, downloadBuffer, needDownload.Target.Length,
+                                                    processingItem, cancellationToken);
                                                 BytesDownloaded = dataDownloaded += needDownload.Target.Length;
                                             }
 
@@ -334,18 +336,12 @@ namespace CodeElements.UpdateSystem.Core
                                             var newFile = new FileInfo(Path.Combine(deltaPatchDirectory.FullName,
                                                 Guid.NewGuid().ToString("D")));
 
-                                            using (var originalFileStream = new FileStream(patchedFile.FullName,
-                                                FileMode.Open, FileAccess.Read))
-                                            using (var deltaFileStream = new FileStream(deltaFile.FullName,
-                                                FileMode.Open,
-                                                FileAccess.Read))
-                                            using (var outputStream = new FileStream(newFile.FullName,
-                                                FileMode.CreateNew,
-                                                FileAccess.ReadWrite))
+                                            using (var originalFileStream = new FileStream(patchedFile.FullName, FileMode.Open, FileAccess.Read))
+                                            using (var deltaFileStream = new FileStream(deltaFile.FullName, FileMode.Open, FileAccess.Read))
+                                            using (var outputStream = new FileStream(newFile.FullName, FileMode.CreateNew, FileAccess.ReadWrite))
                                             {
                                                 await Task.Run(() =>
-                                                    VcdiffDecoder.Decode(originalFileStream, deltaFileStream,
-                                                        outputStream));
+                                                    VcdiffDecoder.Decode(originalFileStream, deltaFileStream, outputStream));
                                             }
 
                                             if (!isPatchedFileOriginal)
@@ -378,10 +374,8 @@ namespace CodeElements.UpdateSystem.Core
                             if (!tempFile.Exists)
                             {
                                 var downloadHash = await DownloadFile(
-                                    new Uri(_updateController.UpdateSystemApiUri,
-                                        $"download?file={needDownload.Target.Hash}"),
-                                    tempFile, downloadBuffer, needDownload.Target.Length, processingItem,
-                                    cancellationToken);
+                                    new Uri($"download?file={needDownload.Target.Hash}"), tempFile, downloadBuffer,
+                                    needDownload.Target.Length, processingItem, cancellationToken);
                                 BytesDownloaded = dataDownloaded += needDownload.Target.Length;
 
                                 if (!downloadHash.Equals(needDownload.Target.Hash))
@@ -436,7 +430,7 @@ namespace CodeElements.UpdateSystem.Core
 
             //double actualLength = response.Content.Headers.ContentLength.Value;
 
-            var lastUpdate = DateTime.UtcNow;
+            var lastUpdate = DateTimeOffset.UtcNow;
             var dataDownloadedSinceLastUpdate = 0;
             double currentSpeed = 0;
 
@@ -473,12 +467,12 @@ namespace CodeElements.UpdateSystem.Core
                     processColumn.Current = countingStream.TotalDataRead;
                     dataDownloadedSinceLastUpdate += countingStream.LastDataRead;
 
-                    if (DateTime.UtcNow - lastUpdate > TimeSpan.FromMilliseconds(100) || currentSpeed == 0)
+                    if (DateTimeOffset.UtcNow - lastUpdate > TimeSpan.FromMilliseconds(100) || currentSpeed == 0)
                     {
-                        var period = DateTime.UtcNow - lastUpdate;
+                        var period = DateTimeOffset.UtcNow - lastUpdate;
                         currentSpeed = dataDownloadedSinceLastUpdate / period.TotalSeconds;
 
-                        lastUpdate = DateTime.UtcNow;
+                        lastUpdate = DateTimeOffset.UtcNow;
                         dataDownloadedSinceLastUpdate = 0;
                         DownloadSpeed = currentSpeed;
                     }

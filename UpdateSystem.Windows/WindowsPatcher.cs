@@ -9,7 +9,6 @@ using CodeElements.UpdateSystem.Windows.Patcher;
 using CodeElements.UpdateSystem.Windows.Patcher.Translations;
 using CodeElements.UpdateSystem.Windows.Patcher.Utilities;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 
 namespace CodeElements.UpdateSystem.Windows
 {
