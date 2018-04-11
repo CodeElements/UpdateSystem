@@ -161,7 +161,9 @@ namespace CodeElements.UpdateSystem.Windows.WinForms.Internal
                                 progressBarMarquee = true;
                                 break;
                             case ProgressAction.ApplyDeltaPatch:
-                                updateActionLabel.Text = Properties.Resources.UpdatesAvailableForm_ApplyDeltaPatch;
+                                updateActionLabel.Text =
+                                    string.Format(Properties.Resources.UpdatesAvailableForm_ApplyDeltaPatch,
+                                        downloader.CurrentFilename);
                                 break;
                         }
 

@@ -124,7 +124,12 @@ namespace CodeElements.UpdateSystem.Windows
             var currentProcess = Process.GetCurrentProcess();
             arguments.Add("/hostProcess " + currentProcess.Id);
 
-            var startInfo = new ProcessStartInfo(patcherAssembly.FullName, "patch " + string.Join(" ", arguments));
+            var startInfo =
+                new ProcessStartInfo(patcherAssembly.FullName, "patch " + string.Join(" ", arguments))
+                {
+                    UseShellExecute = false,
+                    WorkingDirectory = patcherDirectory.FullName
+                };
             if (RunAsAdministrator)
                 startInfo.Verb = "runas";
 

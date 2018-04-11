@@ -374,7 +374,7 @@ namespace CodeElements.UpdateSystem.Core
                             if (!tempFile.Exists)
                             {
                                 var downloadHash = await DownloadFile(
-                                    new Uri($"download?file={needDownload.Target.Hash}"), tempFile, downloadBuffer,
+                                    new Uri($"download?file={needDownload.Target.Hash}", UriKind.Relative), tempFile, downloadBuffer,
                                     needDownload.Target.Length, processingItem, cancellationToken);
                                 BytesDownloaded = dataDownloaded += needDownload.Target.Length;
 

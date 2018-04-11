@@ -67,7 +67,16 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                     var config = JsonConvert.DeserializeObject<WindowsPatcherConfig>(File.ReadAllText(configFilename),
                         JsonSerializerSettings);
 
-                    var hostProcess = Process.GetProcessById(hostProcessId);
+                    Process hostProcess;
+                    try
+                    {
+                        hostProcess = Process.GetProcessById(hostProcessId);
+                    }
+                    catch (Exception)
+                    {
+                        hostProcess = null; //not found/running anymore
+                    }
+                    
                     var updater = new UpdaterCore(config, hostProcess, new WindowsPatcherTranslation(language));
 
                     if (config.RunSilently)

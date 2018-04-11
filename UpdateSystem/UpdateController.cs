@@ -85,7 +85,7 @@ namespace CodeElements.UpdateSystem
         public TEnvironmentSettings Settings { get; set; }
 
         /// <summary>
-        ///     The desired changelog language. The fallback language is always english
+        ///     The desired changelog language. The fallback language is always english.
         /// </summary>
         /// <example>
         ///     ChangelogLanguage: de-de
