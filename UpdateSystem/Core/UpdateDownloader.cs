@@ -467,7 +467,7 @@ namespace CodeElements.UpdateSystem.Core
                     processColumn.Current = countingStream.TotalDataRead;
                     dataDownloadedSinceLastUpdate += countingStream.LastDataRead;
 
-                    if (DateTimeOffset.UtcNow - lastUpdate > TimeSpan.FromMilliseconds(100) || currentSpeed == 0)
+                    if (DateTimeOffset.UtcNow - lastUpdate > TimeSpan.FromMilliseconds(100)) // || currentSpeed == 0
                     {
                         var period = DateTimeOffset.UtcNow - lastUpdate;
                         currentSpeed = dataDownloadedSinceLastUpdate / period.TotalSeconds;

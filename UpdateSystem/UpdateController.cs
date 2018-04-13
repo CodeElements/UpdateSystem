@@ -134,9 +134,7 @@ namespace CodeElements.UpdateSystem
             var httpClient = _httpClient.Value;
             var version = VersionProvider.GetVersion();
             HttpClientSetHeaders(version);
-
-            httpClient.DefaultRequestHeaders.AcceptLanguage.Add(
-                new StringWithQualityHeaderValue(ChangelogLanguage.TwoLetterISOLanguageName));
+            
             try
             {
                 var uri = new Uri($"packages/{Uri.EscapeDataString(version.ToString())}/check", UriKind.Relative);
@@ -182,7 +180,7 @@ namespace CodeElements.UpdateSystem
             var version = VersionProvider.GetVersion();
             HttpClientSetHeaders(version);
 
-            var uri = new Uri($"packages/{Uri.EscapeDataString(version.ToString())}/files");
+            var uri = new Uri($"packages/{Uri.EscapeDataString(version.ToString())}/files", UriKind.Relative);
 
             var platforms = PlatformProvider?.GetEncodedPlatforms();
             if (platforms != null)
@@ -214,6 +212,8 @@ namespace CodeElements.UpdateSystem
                 $"({os.OperatingSystem + " " + os.Version.ToString(3)}; {CultureInfo.CurrentUICulture})"));
             headers.UserAgent.Add(new ProductInfoHeaderValue("app", version.ToString(true)));
             headers.UserAgent.Add(new ProductInfoHeaderValue($"({hwid})"));
+
+            headers.AcceptLanguage.Add(new StringWithQualityHeaderValue(ChangelogLanguage.TwoLetterISOLanguageName));
         }
 
         private void HttpClientSetJwt<T>(JwtResponse<T> jwtResponse)

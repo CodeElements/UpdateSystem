@@ -36,9 +36,11 @@ namespace CodeElements.UpdateSystem.Windows.Wpf
             var downloadable = (IDownloadable) searchResult;
             CurrentVersion = downloadable.UpdateController.VersionProvider.GetVersion();
 
+            IsTargetPackageRollback = searchResult.Rollback && CurrentVersion > searchResult.TargetPackage.Version;
             ChangelogsHtml = GenerateChangelogs(searchResult);
         }
 
+        public bool IsTargetPackageRollback { get; }
         public string ChangelogsHtml { get; }
         public List<UpdatePackageInfo> UpdatePackages { get; }
         public SemVersion CurrentVersion { get; }
