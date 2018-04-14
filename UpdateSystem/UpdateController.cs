@@ -66,7 +66,7 @@ namespace CodeElements.UpdateSystem
             _jsonSerializerSettings =
                 new JsonSerializerSettings {ContractResolver = new CamelCasePropertyNamesContractResolver()};
 
-            Settings?.Cleanup(projectId);
+            Settings.Cleanup(projectId);
         }
 
         /// <summary>

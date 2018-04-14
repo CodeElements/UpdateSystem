@@ -9,19 +9,42 @@ namespace CodeElements.UpdateSystem.Core
     public interface IEnvironmentManager : ICleanupUtilities
     {
         /// <summary>
-        ///     Get a temporary directory where all required files will be downloaded to. If the temp directory already contains files, they may be reused.
+        ///     Try to open an existing file. If the file does not exist, return null (do not throw an exception).
         /// </summary>
-        /// <param name="projectGuid">The guid of the current project, may be used in the folder name.</param>
-        /// <returns>Return the directory</returns>
-        DirectoryInfo GetTempDirectory(Guid projectGuid);
+        /// <param name="filename">The file name which may include path variables</param>
+        /// <returns>Return the stream of the file if the file exists, else return null.</returns>
+        Stream TryOpenRead(string filename);
 
         /// <summary>
-        ///     Translate the variable based filename to an absolute path. All supported variables must be replaced to adapt the
-        ///     location of the file
+        ///     Get a file of the current process stack
         /// </summary>
-        /// <param name="filename">The filename which may contain variables</param>
-        /// <returns>Return the absolute and valid path of the file</returns>
-        FileInfo TranslateFilename(string filename);
+        /// <param name="projectId">The project id</param>
+        /// <param name="hash">The hash of the file</param>
+        /// <returns>Return the file info</returns>
+        IFileInfo GetStackFile(Guid projectId, Hash hash);
+
+        /// <summary>
+        ///     Get a delta stack file
+        /// </summary>
+        /// <param name="projectId">The project id</param>
+        /// <param name="patchId">The id of the delta patch</param>
+        /// <returns>Return the file info</returns>
+        IFileInfo GetDeltaStackFile(Guid projectId, int patchId);
+
+        /// <summary>
+        ///     Get a random, non-existing temp file
+        /// </summary>
+        /// <param name="projectId">The project id</param>
+        /// <returns>Return a random, non-existing temp file</returns>
+        IFileInfo GetRandomFile(Guid projectId);
+
+        /// <summary>
+        ///     Move a file to the stack files
+        /// </summary>
+        /// <param name="projectId">The project id</param>
+        /// <param name="sourceFile">The source file that should be moved</param>
+        /// <param name="hash">The hash of the stack file</param>
+        void MoveToStackFiles(Guid projectId, IFileInfo sourceFile, Hash hash);
 
         /// <summary>
         ///     Execute the updater

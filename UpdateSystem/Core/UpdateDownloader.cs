@@ -146,14 +146,13 @@ namespace CodeElements.UpdateSystem.Core
         ///     Download the required files
         /// </summary>
         /// <returns>Return an application patcher that can apply the updates from the downloaded files</returns>
-        public async Task<ApplicationPatcher> Download(CancellationToken cancellationToken)
+        public async Task<ApplicationPatcher> DownloadAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            
+            var projectId = _downloadable.UpdateController.ProjectId;
 
-            var tempDirectory = _updateController.Environment.GetTempDirectory(_updateController.ProjectId);
-            var deltaPatchDirectory = tempDirectory.CreateSubdirectory("deltaFiles");
-
-            var filesDictionary = new Dictionary<Hash, FileInfo>();
+            var filesDictionary = new Dictionary<Hash, IFileInfo>();
             var processCollection = new ProcessCollection();
             processCollection.PropertyChanged += (sender, args) => Progress = processCollection.Current;
 
@@ -167,260 +166,245 @@ namespace CodeElements.UpdateSystem.Core
                 ? new ProcessColumn(_downloadable.Instructions.TargetFiles.Count, 0.35)
                 : null;
 
-            try
-            {
 #if NETSTANDARD
-                using (var rsa = RSA.Create())
+            using (var rsa = RSA.Create())
 #else
-				using (var rsa = new RSACng())
+			using (var rsa = new RSACng())
 #endif
-                using (var sha256 = SHA256.Create())
+            using (var sha256 = SHA256.Create())
+            {
+                rsa.ImportParameters(_updateController.PublicKey);
+
+                //validate tasks
+                if (_downloadable.Instructions.Tasks?.Count > 0)
                 {
-                    rsa.ImportParameters(_updateController.PublicKey);
-
-                    //validate tasks
-                    if (_downloadable.Instructions.Tasks?.Count > 0)
-                    {
-                        CurrentAction = ProgressAction.ValidateTasks;
-                        var serializerSettings =
-                            new JsonSerializerSettings
-                            {
-                                ContractResolver = new UpdateTaskSignatureDataContractResolver()
-                            };
-                        foreach (var updateTask in _downloadable.Instructions.Tasks)
+                    CurrentAction = ProgressAction.ValidateTasks;
+                    var serializerSettings =
+                        new JsonSerializerSettings
                         {
-                            var hash = sha256.ComputeHash(
-                                Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateTask, serializerSettings)));
+                            ContractResolver = new UpdateTaskSignatureDataContractResolver()
+                        };
+                    foreach (var updateTask in _downloadable.Instructions.Tasks)
+                    {
+                        var hash = sha256.ComputeHash(
+                            Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateTask, serializerSettings)));
 
-                            if (!rsa.VerifyHash(hash, updateTask.Signature, HashAlgorithmName.SHA256,
-                                RSASignaturePadding.Pss))
-                                throw new InvalidOperationException("The signature of a task could not be validated.");
+                        if (!rsa.VerifyHash(hash, updateTask.Signature, HashAlgorithmName.SHA256,
+                            RSASignaturePadding.Pss))
+                            throw new InvalidOperationException("The signature of a task could not be validated.");
 
-                            validateTasksProcessItem.Increment();
+                        validateTasksProcessItem.Increment();
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+                }
+
+                List<IFileOperation> fileOperations;
+                if (_downloadable.Instructions.FileOperations == null)
+                {
+                    //we have to build our own operation list from the target files and the current file base
+                    fileOperations = new List<IFileOperation>();
+
+                    //key hash is new file hash, hash in tuple is current hash
+                    var updateOperations =
+                        new Dictionary<Hash, Tuple<UpdateFileOperation, Hash>>();
+                    await Task.Run(() =>
+                    {
+                        foreach (var targetFile in _downloadable.Instructions.TargetFiles)
+                        {
+                            var currentFs = _updateController.Environment.TryOpenRead(targetFile.Filename);
+                            if (currentFs == null)
+                                fileOperations.Add(new DownloadFileOperation {Target = targetFile});
+                            else
+                                using (currentFs)
+                                {
+                                    var hash = new Hash(sha256.ComputeHash(currentFs));
+                                    if (!hash.Equals(targetFile.Hash))
+                                    {
+                                        var updateOperation = new UpdateFileOperation {Target = targetFile};
+                                        fileOperations.Add(updateOperation);
+                                        updateOperations.Add(updateOperation.Target.Hash,
+                                            new Tuple<UpdateFileOperation, Hash>(updateOperation, hash));
+                                    }
+                                }
+
                             cancellationToken.ThrowIfCancellationRequested();
+                            scanFiles.Increment();
                         }
+                    }, cancellationToken);
+
+                    //if (updateOperations.Count > 0)
+                    //{
+                    //    //Dictionary: Current File => Target file
+                    //    var updates = updateOperations.ToDictionary(x => x.Value.Item2, y => y.Key);
+                    //    var response = await _updateController.HttpClient.PostAsync(
+                    //        new Uri(_updateController.UpdateSystemApiUri,
+                    //            $"projects/{_updateController.ProjectId:N}/findDeltaPatches"),
+                    //        new StringContent(JsonConvert.SerializeObject(updates)), cancellationToken);
+                    //    if (response.StatusCode == HttpStatusCode.OK)
+                    //    {
+                    //        //Dictionary target hash => delta patches from source hash
+                    //        var patches =
+                    //            JsonConvert.DeserializeObject<Dictionary<Hash, List<DeltaPatchInfo>>>(
+                    //                await response.Content.ReadAsStringAsync());
+                    //        if (patches?.Count > 0)
+                    //        {
+                    //            foreach (var patch in patches)
+                    //            {
+                    //                var updateOperation = updateOperations[patch.Key];
+                    //                fileOperations.Remove(updateOperation.Item1);
+                    //                fileOperations.Add(new DeltaPatchOperation{Patches = patch.Value, Target = updateOperation.Item1.Target});
+                    //            }
+                    //        }
+                    //    } //else ignore, delta patches are not that important
+                    //}
+                }
+                else
+                {
+                    fileOperations = _downloadable.Instructions.FileOperations;
+                }
+
+                var downloadOperations = fileOperations.OfType<INeedDownload>().ToList();
+
+                var downloadFilesProcessing =
+                    downloadOperations.ToDictionary(x => x, y => downloadFiles.AddColumn(y.GetRealLength(), 1));
+
+                TotalBytesToDownload = downloadOperations.Sum(x => x.GetRealLength());
+
+                var downloadBuffer = new byte[8192];
+                var dataDownloaded = 0L;
+
+                //we process the delta patches first
+                foreach (var needDownload in downloadOperations.OrderByDescending(x => x is DeltaPatchOperation))
+                {
+                    var processingItem = downloadFilesProcessing[needDownload];
+
+                    if (filesDictionary.ContainsKey(needDownload.Target.Hash))
+                    {
+                        processingItem.Complete();
+                        continue;
                     }
 
-                    List<IFileOperation> fileOperations;
-                    if (_downloadable.Instructions.FileOperations == null)
+                    var tempFile = _updateController.Environment.GetStackFile(projectId, needDownload.Target.Hash);
+                    if (tempFile.Exists)
                     {
-                        //we have to build our own operation list from the target files and the current file base
-                        fileOperations = new List<IFileOperation>();
-
-                        //key hash is new file hash, hash in tuple is current hash
-                        var updateOperations =
-                            new Dictionary<Hash, Tuple<UpdateFileOperation, Hash>>();
-                        await Task.Run(() =>
+                        //may be because of an older download
+                        Hash tempFileHash;
+                        using (var fileStream = tempFile.OpenRead())
                         {
-                            foreach (var targetFile in _downloadable.Instructions.TargetFiles)
-                            {
-                                var currentFile = _updateController.Environment.TranslateFilename(targetFile.Filename);
-                                if (!currentFile.Exists)
-                                    fileOperations.Add(new DownloadFileOperation {Target = targetFile});
-                                else
-                                    using (var fileStream = currentFile.OpenRead())
+                            tempFileHash = new Hash(sha256.ComputeHash(fileStream));
+                        }
+
+                        if (!tempFileHash.Equals(needDownload.Target.Hash))
+                            tempFile.Delete();
+                    }
+
+                    if (!tempFile.Exists)
+                    {
+                        CurrentFilename = Path.GetFileName(needDownload.Target.Filename);
+                        if (needDownload is DeltaPatchOperation deltaPatchOperation)
+                        {
+                            var sourceFile =
+                                _updateController.Environment.TryOpenRead(deltaPatchOperation.Target.Filename);
+                            if (sourceFile != null)
+                                try
+                                {
+                                    CurrentAction = ProgressAction.DownloadFile;
+
+                                    var patchedFile = new PatchedFile(sourceFile, null); //the original file
+                                    foreach (var deltaPatchInfo in deltaPatchOperation.Patches)
                                     {
-                                        var hash = new Hash(sha256.ComputeHash(fileStream));
-                                        if (!hash.Equals(targetFile.Hash))
+                                        var deltaFile =
+                                            _updateController.Environment.GetDeltaStackFile(projectId, deltaPatchInfo.PatchId);
+                                        if (!deltaFile.Exists)
                                         {
-                                            var updateOperation = new UpdateFileOperation {Target = targetFile};
-                                            fileOperations.Add(updateOperation);
-                                            updateOperations.Add(updateOperation.Target.Hash,
-                                                new Tuple<UpdateFileOperation, Hash>(updateOperation, hash));
+                                            await DownloadFile(
+                                                new Uri(
+                                                    $"projects/{_updateController.ProjectId:N}/download?patchId={deltaPatchInfo.PatchId}"),
+                                                deltaFile, downloadBuffer, processingItem, cancellationToken);
+                                            BytesDownloaded = dataDownloaded += needDownload.Target.Length;
                                         }
+
+                                        CurrentAction = ProgressAction.ApplyDeltaPatch;
+                                        var newFile = _updateController.Environment.GetRandomFile(projectId);
+                                        var outputStream = newFile.Create();
+
+                                        using (var deltaFileStream = deltaFile.OpenRead())
+                                        {
+                                            await Task.Run(() =>
+                                                VcdiffDecoder.Decode(patchedFile.Stream, deltaFileStream, outputStream));
+                                        }
+
+                                        patchedFile.Dispose(); //deletes the temp file and closes the stream
+
+                                        outputStream.Position = 0;
+                                        patchedFile = new PatchedFile(outputStream, newFile);
                                     }
 
-                                cancellationToken.ThrowIfCancellationRequested();
-                                scanFiles.Increment();
-                            }
-                        });
+                                    //it is not possible to calculate the hash above because the vcdiff encoder jumps around in the output file.
+                                    //(to calculate the hash using a hashStream)
+                                    //do not dispose patchedFile!! (else the file would get removed)
+                                    using (patchedFile.Stream)
+                                    {
+                                        if (!await Task.Run(() =>
+                                            sha256.ComputeHash(patchedFile.Stream)
+                                                .Equals(needDownload.Target.Hash)))
+                                            throw new InvalidOperationException(
+                                                "The file hash does not match the hash of the patched file.");
+                                    }
 
-                        //if (updateOperations.Count > 0)
-                        //{
-                        //    //Dictionary: Current File => Target file
-                        //    var updates = updateOperations.ToDictionary(x => x.Value.Item2, y => y.Key);
-                        //    var response = await _updateController.HttpClient.PostAsync(
-                        //        new Uri(_updateController.UpdateSystemApiUri,
-                        //            $"projects/{_updateController.ProjectId:N}/findDeltaPatches"),
-                        //        new StringContent(JsonConvert.SerializeObject(updates)), cancellationToken);
-                        //    if (response.StatusCode == HttpStatusCode.OK)
-                        //    {
-                        //        //Dictionary target hash => delta patches from source hash
-                        //        var patches =
-                        //            JsonConvert.DeserializeObject<Dictionary<Hash, List<DeltaPatchInfo>>>(
-                        //                await response.Content.ReadAsStringAsync());
-                        //        if (patches?.Count > 0)
-                        //        {
-                        //            foreach (var patch in patches)
-                        //            {
-                        //                var updateOperation = updateOperations[patch.Key];
-                        //                fileOperations.Remove(updateOperation.Item1);
-                        //                fileOperations.Add(new DeltaPatchOperation{Patches = patch.Value, Target = updateOperation.Item1.Target});
-                        //            }
-                        //        }
-                        //    } //else ignore, delta patches are not that important
-                        //}
-                    }
-                    else
-                    {
-                        fileOperations = _downloadable.Instructions.FileOperations;
-                    }
-
-                    var downloadOperations = fileOperations.OfType<INeedDownload>().ToList();
-
-                    var downloadFilesProcessing =
-                        downloadOperations.ToDictionary(x => x, y => downloadFiles.AddColumn(y.GetRealLength(), 1));
-
-                    TotalBytesToDownload = downloadOperations.Sum(x => x.GetRealLength());
-
-                    var downloadBuffer = new byte[8192];
-                    var dataDownloaded = 0L;
-
-                    //we process the delta patches first
-                    foreach (var needDownload in downloadOperations.OrderByDescending(x => x is DeltaPatchOperation))
-                    {
-                        var processingItem = downloadFilesProcessing[needDownload];
-
-                        if (filesDictionary.ContainsKey(needDownload.Target.Hash))
-                        {
-                            processingItem.Complete();
-                            continue;
+                                    _updateController.Environment.MoveToStackFiles(projectId, patchedFile.TempFile,
+                                        needDownload.Target.Hash);
+                                    tempFile = patchedFile.TempFile; //exists now
+                                }
+                                catch (Exception)
+                                {
+                                    // ignored
+                                }
                         }
-
-                        var tempFile = new FileInfo(Path.Combine(tempDirectory.FullName,
-                            needDownload.Target.Hash.ToString()));
-                        if (tempFile.Exists)
-                        {
-                            //may be because of an older download
-                            Hash tempFileHash;
-                            using (var fileStream = tempFile.OpenRead())
-                            {
-                                tempFileHash = new Hash(sha256.ComputeHash(fileStream));
-                            }
-
-                            if (!tempFileHash.Equals(needDownload.Target.Hash))
-                                tempFile.Delete();
-                        }
+                        CurrentAction = ProgressAction.DownloadFile;
 
                         if (!tempFile.Exists)
                         {
-                            CurrentFilename = Path.GetFileName(needDownload.Target.Filename);
-                            if (needDownload is DeltaPatchOperation deltaPatchOperation)
-                            {
-                                var sourceFile =
-                                    _updateController.Environment.TranslateFilename(deltaPatchOperation.Target
-                                        .Filename);
-                                if (sourceFile.Exists)
-                                    try
-                                    {
-                                        CurrentAction = ProgressAction.DownloadFile;
+                            var downloadHash = await DownloadFile(
+                                new Uri($"download?file={needDownload.Target.Hash}", UriKind.Relative), tempFile,
+                                downloadBuffer, processingItem, cancellationToken);
+                            BytesDownloaded = dataDownloaded += needDownload.Target.Length;
 
-                                        var patchedFile = sourceFile;
-                                        var isPatchedFileOriginal = true;
-
-                                        foreach (var deltaPatchInfo in deltaPatchOperation.Patches)
-                                        {
-                                            var deltaFile = new FileInfo(Path.Combine(deltaPatchDirectory.FullName,
-                                                deltaPatchInfo.PatchId.ToString()));
-                                            if (!deltaFile.Exists)
-                                            {
-                                                await DownloadFile(
-                                                    new Uri(
-                                                        $"projects/{_updateController.ProjectId:N}/download?patchId={deltaPatchInfo.PatchId}"),
-                                                    deltaFile, downloadBuffer, needDownload.Target.Length,
-                                                    processingItem, cancellationToken);
-                                                BytesDownloaded = dataDownloaded += needDownload.Target.Length;
-                                            }
-
-                                            CurrentAction = ProgressAction.ApplyDeltaPatch;
-                                            var newFile = new FileInfo(Path.Combine(deltaPatchDirectory.FullName,
-                                                Guid.NewGuid().ToString("D")));
-
-                                            using (var originalFileStream = new FileStream(patchedFile.FullName, FileMode.Open, FileAccess.Read))
-                                            using (var deltaFileStream = new FileStream(deltaFile.FullName, FileMode.Open, FileAccess.Read))
-                                            using (var outputStream = new FileStream(newFile.FullName, FileMode.CreateNew, FileAccess.ReadWrite))
-                                            {
-                                                await Task.Run(() =>
-                                                    VcdiffDecoder.Decode(originalFileStream, deltaFileStream, outputStream));
-                                            }
-
-                                            if (!isPatchedFileOriginal)
-                                                patchedFile.Delete();
-
-                                            patchedFile = newFile;
-                                            isPatchedFileOriginal = false;
-                                        }
-
-                                        //it is not possible to calculate the hash above beause the vcdiff encoder jumps around in the output file.
-                                        using (var fileStream = new FileStream(patchedFile.FullName, FileMode.Open,
-                                            FileAccess.Read))
-                                        {
-                                            if (!await Task.Run(() =>
-                                                sha256.ComputeHash(fileStream).Equals(needDownload.Target.Hash)))
-                                                throw new InvalidOperationException(
-                                                    "The file hash does not match the hash of the patched file.");
-                                        }
-
-                                        patchedFile.MoveTo(tempFile.FullName);
-                                        tempFile = patchedFile; //exists now
-                                    }
-                                    catch (Exception)
-                                    {
-                                        // ignored
-                                    }
-                            }
-                            CurrentAction = ProgressAction.DownloadFile;
-
-                            if (!tempFile.Exists)
-                            {
-                                var downloadHash = await DownloadFile(
-                                    new Uri($"download?file={needDownload.Target.Hash}", UriKind.Relative), tempFile, downloadBuffer,
-                                    needDownload.Target.Length, processingItem, cancellationToken);
-                                BytesDownloaded = dataDownloaded += needDownload.Target.Length;
-
-                                if (!downloadHash.Equals(needDownload.Target.Hash))
-                                    throw new InvalidOperationException(
-                                        "The hash value of the downloaded file and the expected hash do no match.");
-                            }
+                            if (!downloadHash.Equals(needDownload.Target.Hash))
+                                throw new InvalidOperationException(
+                                    "The hash value of the downloaded file and the expected hash do no match.");
                         }
-
-                        var fileHash = needDownload.Target.Hash;
-                        if (!_downloadable.Instructions.FileSignatures.TryGetValue(fileHash, out var fileSignature))
-                            throw new InvalidOperationException(
-                                $"The signature of the file with the hash '{fileHash}' was not found.");
-
-                        CurrentAction = ProgressAction.ValidateFile;
-
-                        if (!rsa.VerifyHash(fileHash.HashData, fileSignature, HashAlgorithmName.SHA256,
-                            RSASignaturePadding.Pss))
-                            throw new InvalidOperationException(
-                                $"The signature of the file '{needDownload.Target.Filename}' ({fileHash}) could not be validated.");
-
-
-                        filesDictionary.Add(fileHash, tempFile);
-                        processingItem.Complete();
-                        cancellationToken.ThrowIfCancellationRequested();
                     }
 
-                    return new ApplicationPatcher(_updateController.Environment,
-                        new PatcherConfig
-                        {
-                            AvailableFiles = filesDictionary.ToDictionary(x => x.Key, y => y.Value.FullName),
-                            FileOperations = fileOperations,
-                            TempDirectory = tempDirectory.FullName,
-                            UpdateTasks = _downloadable.Instructions.Tasks
-                        });
+                    var fileHash = needDownload.Target.Hash;
+                    if (!_downloadable.Instructions.FileSignatures.TryGetValue(fileHash, out var fileSignature))
+                        throw new InvalidOperationException(
+                            $"The signature of the file with the hash '{fileHash}' was not found.");
+
+                    CurrentAction = ProgressAction.ValidateFile;
+
+                    if (!rsa.VerifyHash(fileHash.HashData, fileSignature, HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pss))
+                        throw new InvalidOperationException(
+                            $"The signature of the file '{needDownload.Target.Filename}' ({fileHash}) could not be validated.");
+
+
+                    filesDictionary.Add(fileHash, tempFile);
+                    processingItem.Complete();
+                    cancellationToken.ThrowIfCancellationRequested();
                 }
-            }
-            catch (Exception)
-            {
-                tempDirectory.Delete(true);
-                throw;
+
+                return new ApplicationPatcher(_updateController.Environment,
+                    new PatcherConfig
+                    {
+                        AvailableFiles = filesDictionary.ToDictionary(x => x.Key, y => y.Value.Filename),
+                        FileOperations = fileOperations,
+                        UpdateTasks = _downloadable.Instructions.Tasks
+                    });
             }
         }
 
-        private async Task<Hash> DownloadFile(Uri uri, FileInfo fileInfo, byte[] buffer, int length,
-            ProcessColumn processColumn, CancellationToken cancellationToken)
+        private async Task<Hash> DownloadFile(Uri uri, IFileInfo fileInfo, byte[] buffer, ProcessColumn processColumn, CancellationToken cancellationToken)
         {
             var response =
                 await _updateController.HttpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead,
@@ -432,11 +416,10 @@ namespace CodeElements.UpdateSystem.Core
 
             var lastUpdate = DateTimeOffset.UtcNow;
             var dataDownloadedSinceLastUpdate = 0;
-            double currentSpeed = 0;
 
             using (var netStream = await response.Content.ReadAsStreamAsync())
             using (var countingStream = new CountingStreamWrapper(netStream))
-            using (var fileStream = new FileStream(fileInfo.FullName, FileMode.CreateNew, FileAccess.Write))
+            using (var fileStream = fileInfo.Create())
 #if NETSTANDARD
             using (var hashStream =
                 new IncrementalHashStream(fileStream, IncrementalHash.CreateHash(HashAlgorithmName.SHA256)))
@@ -470,7 +453,7 @@ namespace CodeElements.UpdateSystem.Core
                     if (DateTimeOffset.UtcNow - lastUpdate > TimeSpan.FromMilliseconds(100)) // || currentSpeed == 0
                     {
                         var period = DateTimeOffset.UtcNow - lastUpdate;
-                        currentSpeed = dataDownloadedSinceLastUpdate / period.TotalSeconds;
+                        var currentSpeed = dataDownloadedSinceLastUpdate / period.TotalSeconds;
 
                         lastUpdate = DateTimeOffset.UtcNow;
                         dataDownloadedSinceLastUpdate = 0;
@@ -484,6 +467,25 @@ namespace CodeElements.UpdateSystem.Core
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private class PatchedFile : IDisposable
+        {
+            public PatchedFile(Stream stream, IFileInfo tempFile)
+            {
+                Stream = stream;
+                TempFile = tempFile;
+            }
+
+            public bool IsOriginal => TempFile != null;
+            public Stream Stream { get; }
+            public IFileInfo TempFile { get;}
+
+            public void Dispose()
+            {
+                Stream?.Dispose();
+                TempFile?.Delete();
+            }
         }
     }
 }

@@ -103,7 +103,7 @@ namespace CodeElements.UpdateSystem.Windows.Wpf
                            try
                            {
                                UpdateDownloader = _searchResult.GetDownloader();
-                               var patcher = await UpdateDownloader.Download(_downloadCancellationTokenSource.Token);
+                               var patcher = await UpdateDownloader.DownloadAsync(_downloadCancellationTokenSource.Token);
                                patcher.Patch();
                            }
                            catch (TaskCanceledException)

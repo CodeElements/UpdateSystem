@@ -44,7 +44,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                 ApplicationPath = windowsPatcherConfig.ApplicationPath,
                 PatcherConfig = windowsPatcherConfig
             };
-            _logger = new Logger(Path.Combine(windowsPatcherConfig.ActionConfig.TempDirectory, "patcher", "log.txt"));
+            _logger = new Logger(Path.Combine(windowsPatcherConfig.ActionConfig.ProjectId.GetTempDirectory(), "patcher", "log.txt"));
             Translation = translation;
 
             _statusUpdater = new StatusUpdater(Translation);
@@ -225,7 +225,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
             //delete the temp directory after 10 seconds
             Process.Start(
                 new ProcessStartInfo("cmd.exe",
-                    $"/C choice /C Y /N /D Y /T 10 & rmdir /s /q \"{_windowsPatcherConfig.ActionConfig.TempDirectory}\"")
+                    $"/C choice /C Y /N /D Y /T 10 & rmdir /s /q \"{_windowsPatcherConfig.ActionConfig.ProjectId.GetTempDirectory()}\"")
                 {
                     UseShellExecute = false,
                     CreateNoWindow = true

@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using CodeElements.UpdateSystem.Core;
 using CodeElements.UpdateSystem.Windows.Patcher;
+using CodeElements.UpdateSystem.Windows.Patcher.Extensions;
 using CodeElements.UpdateSystem.Windows.Patcher.Translations;
 using CodeElements.UpdateSystem.Windows.Patcher.Utilities;
 using Newtonsoft.Json;
@@ -54,9 +55,11 @@ namespace CodeElements.UpdateSystem.Windows
         /// </summary>
         public IWindowsUpdaterTranslation Language { get; set; }
 
-        DirectoryInfo IEnvironmentManager.GetTempDirectory(Guid projectGuid)
+        private static DirectoryInfo GetTempDirectory(Guid projectId)
         {
-            return new DirectoryInfo(Path.Combine(Path.GetTempPath(), $"CodeElements.UpdateSystem.{projectGuid:D}"));
+            var directory = new DirectoryInfo(projectId.GetTempDirectory());
+            if (!directory.Exists) directory.Create();
+            return directory;
         }
 
         internal static string TranslateFilename(string filename, string baseDirectory)
@@ -66,16 +69,44 @@ namespace CodeElements.UpdateSystem.Windows
             return Environment.ExpandEnvironmentVariables(filename);
         }
 
-        FileInfo IEnvironmentManager.TranslateFilename(string filename)
+        Stream IEnvironmentManager.TryOpenRead(string filename)
         {
-            return new FileInfo(TranslateFilename(filename, BaseDirectory));
+            var path = TranslateFilename(filename, BaseDirectory);
+            if (!File.Exists(path)) return null;
+            return File.OpenRead(path);
+        }
+
+        IFileInfo IEnvironmentManager.GetStackFile(Guid projectId, Hash hash)
+        {
+            return new WindowsFileInfo(Path.Combine(GetTempDirectory(projectId).FullName, hash.ToString()));
+        }
+
+        IFileInfo IEnvironmentManager.GetDeltaStackFile(Guid projectId, int patchId)
+        {
+            return new WindowsFileInfo(
+                Path.Combine(GetTempDirectory(projectId).CreateSubdirectory("deltaFiles").FullName,
+                    patchId.ToString()));
+        }
+
+        IFileInfo IEnvironmentManager.GetRandomFile(Guid projectId)
+        {
+            return new WindowsFileInfo(
+                Path.Combine(GetTempDirectory(projectId).CreateSubdirectory("temp").FullName,
+                    Guid.NewGuid().ToString("N")));
+        }
+
+        void IEnvironmentManager.MoveToStackFiles(Guid projectId, IFileInfo sourceFile, Hash hash)
+        {
+            var targetFile = ((IEnvironmentManager) this).GetStackFile(projectId, hash);
+            File.Move(sourceFile.Filename, targetFile.Filename);
+
+            ((WindowsFileInfo) sourceFile).Refresh();
         }
 
         void IEnvironmentManager.ExecuteUpdater(PatcherConfig patcherConfig)
         {
             //the patcher directory will contain the patcher executable file aswell as it's dependencies
-            var patcherDirectory = new DirectoryInfo(Path.Combine(patcherConfig.TempDirectory, "patcher"));
-            patcherDirectory.Create();
+            var patcherDirectory = GetTempDirectory(patcherConfig.ProjectId).CreateSubdirectory("patcher");
 
             //copy patcher assembly
             var patcherAssembly = new FileInfo(Assembly.GetAssembly(typeof(WindowsPatcher)).Location);

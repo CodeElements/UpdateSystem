@@ -100,7 +100,7 @@ namespace CodeElements.UpdateSystem.Windows.WinForms.Internal
 
             try
             {
-                var patcher = await downloader.Download(_downloadCancellationTokenSource.Token);
+                var patcher = await downloader.DownloadAsync(_downloadCancellationTokenSource.Token);
                 patcher.Patch();
             }
             catch (TaskCanceledException)

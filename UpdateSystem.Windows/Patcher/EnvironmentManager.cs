@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using CodeElements.UpdateSystem.Windows.Patcher.Extensions;
 
 namespace CodeElements.UpdateSystem.Windows.Patcher
 {
@@ -13,7 +14,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher
                 RevertTempDirectory =
                     new DirectoryInfo(FileExtensions.MakeDirectoryUnique(Path.Combine(BaseDirectory,
                         "CodeElements.UpdateSystem.Backup")));
-            else RevertTempDirectory = new DirectoryInfo(Path.Combine(config.ActionConfig.TempDirectory, "backup"));
+            else RevertTempDirectory = new DirectoryInfo(Path.Combine(config.ActionConfig.ProjectId.GetTempDirectory(), "backup"));
             RevertTempDirectory.Create();
         }
 

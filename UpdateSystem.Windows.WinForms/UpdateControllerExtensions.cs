@@ -39,7 +39,7 @@ namespace CodeElements.UpdateSystem.Windows.WinForms
 
             if (searchResult.IsUpdateEnforced)
             {
-                (await searchResult.GetDownloader().Download(CancellationToken.None)).Patch();
+                (await searchResult.GetDownloader().DownloadAsync(CancellationToken.None)).Patch();
                 return;
             }
 

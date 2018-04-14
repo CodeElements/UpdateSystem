@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace CodeElements.UpdateSystem.Core
 {
@@ -35,7 +34,7 @@ namespace CodeElements.UpdateSystem.Core
         public void Dispose()
         {
             _isDisposed = true;
-            Directory.Delete(_patcherConfig.TempDirectory, true);
+            _environmentManager.Cleanup(_patcherConfig.ProjectId);
         }
     }
 }

@@ -49,6 +49,7 @@
     <Compile Include="EnvironmentApplicationCloser.cs" />
     <Compile Include="FileExtensions.cs" />
     <Compile Include="Patcher\Extensions\FileOperationExtensions.cs" />
+    <Compile Include="Patcher\Extensions\ProjectIdExtensions.cs" />
     <Compile Include="Patcher\Translations\ImplementedUpdaterTranslation.cs" />
     <Compile Include="IWindowsUpdaterTranslation.cs" />
     <Compile Include="Patcher\EnvironmentManager.cs" />
@@ -102,6 +103,7 @@
     </Compile>
     <Compile Include="UpdaterUi.cs" />
     <Compile Include="WindowsPatcher.cs" />
+    <Compile Include="WindowsFileInfo.cs" />
     <Compile Include="WindowsUpdaterTranslation.cs" />
     <EmbeddedResource Include="Patcher\UI\InstallForm.resx">
       <DependentUpon>InstallForm.cs</DependentUpon>
