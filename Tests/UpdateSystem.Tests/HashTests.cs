@@ -47,7 +47,7 @@ namespace CodeElements.UpdateSystem.Tests
         [InlineData("F!!!")]
         public void TestParseInvalidHash(string hashValue)
         {
-            Assert.ThrowsAny<Exception>(() => Hash.Parse(hashValue));
+            Assert.ThrowsAny<ArgumentException>(() => Hash.Parse(hashValue));
             Assert.False(Hash.TryParse(hashValue, out var _));
         }
 
