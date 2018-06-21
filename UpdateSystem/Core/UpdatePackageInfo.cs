@@ -21,7 +21,7 @@ namespace CodeElements.UpdateSystem.Core
 		/// <summary>
 		///     The date when the update package was released
 		/// </summary>
-		public DateTime ReleaseDate { get; set; }
+		public DateTimeOffset ReleaseDate { get; set; }
 
 		/// <summary>
 		///     True if the update is enforced
