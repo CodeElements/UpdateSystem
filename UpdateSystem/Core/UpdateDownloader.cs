@@ -399,7 +399,8 @@ namespace CodeElements.UpdateSystem.Core
                     {
                         AvailableFiles = filesDictionary.ToDictionary(x => x.Key, y => y.Value.Filename),
                         FileOperations = fileOperations,
-                        UpdateTasks = _downloadable.Instructions.Tasks
+                        UpdateTasks = _downloadable.Instructions.Tasks,
+                        ProjectId = _updateController.ProjectId
                     });
             }
         }
