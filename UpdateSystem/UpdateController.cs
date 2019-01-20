@@ -22,7 +22,8 @@ namespace CodeElements.UpdateSystem
     public class UpdateController<TEnvironmentSettings> : IUpdateController
         where TEnvironmentSettings : IEnvironmentManager, new()
     {
-        private Uri UpdateSystemApiUri => new Uri($"http://localhost:58830/v1/projects/{ProjectId:N}/u/");
+        private Uri UpdateSystemApiUri => new Uri($"https://service.codeelements.net:2313/v1/projects/{ProjectId:N}/u/");
+        //private Uri UpdateSystemApiUri => new Uri($"http://localhost:58830/v1/projects/{ProjectId:N}/u/");
         private readonly Lazy<HttpClient> _httpClient;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
 

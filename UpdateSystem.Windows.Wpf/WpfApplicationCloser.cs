@@ -3,7 +3,7 @@
 namespace CodeElements.UpdateSystem.Windows.Wpf
 {
     /// <summary>
-    ///     A terminator for a Wpf app. Invokes <see cref="Application.Current.Shutdown()" />
+    ///     A terminator for a Wpf app. Invokes <code>Application.Current.Shutdown()</code>
     /// </summary>
     public class WpfApplicationCloser : IApplicationCloser
     {

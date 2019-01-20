@@ -1,7 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard1.5;net46</TargetFrameworks>
+    <PackageLicense>https://github.com/CodeElements/UpdateSystem/blob/master/LICENSE</PackageLicense>
   </PropertyGroup>
 
   <ItemGroup>
