@@ -37,7 +37,9 @@ namespace CodeElements.UpdateSystem.Windows.Wpf
             CurrentVersion = downloadable.UpdateController.VersionProvider.GetVersion();
 
             IsTargetPackageRollback = searchResult.Rollback && CurrentVersion > searchResult.TargetPackage.Version;
-            ChangelogsHtml = GenerateChangelogs(searchResult);
+
+            if (!IsTargetPackageRollback)
+                ChangelogsHtml = GenerateChangelogs(searchResult);
         }
 
         public bool IsTargetPackageRollback { get; }

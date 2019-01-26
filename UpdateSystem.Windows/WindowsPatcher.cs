@@ -158,7 +158,7 @@ namespace CodeElements.UpdateSystem.Windows
             var startInfo =
                 new ProcessStartInfo(patcherAssembly.FullName, "patch " + string.Join(" ", arguments))
                 {
-                    UseShellExecute = false,
+                    UseShellExecute = true, //required for runas
                     WorkingDirectory = patcherDirectory.FullName
                 };
             if (RunAsAdministrator)

@@ -30,12 +30,13 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.UI
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(InstallForm));
             this.applicationImage = new System.Windows.Forms.PictureBox();
             this.headerLabel = new System.Windows.Forms.Label();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.statusLabel = new System.Windows.Forms.Label();
             this.progressLabel = new System.Windows.Forms.Label();
-            this.bottomPanel1 = new BottomPanel();
+            this.bottomPanel1 = new CodeElements.UpdateSystem.Windows.Patcher.UI.Controls.BottomPanel();
             this.cancelButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.applicationImage)).BeginInit();
             this.bottomPanel1.SuspendLayout();
@@ -43,7 +44,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.UI
             // 
             // applicationImage
             // 
-            this.applicationImage.Image = global::CodeElements.UpdateSystem.Windows.Properties.Resources.logo;
+            this.applicationImage.Image = ((System.Drawing.Image)(resources.GetObject("applicationImage.Image")));
             this.applicationImage.InitialImage = null;
             this.applicationImage.Location = new System.Drawing.Point(12, 6);
             this.applicationImage.Name = "applicationImage";
@@ -72,39 +73,39 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.UI
             | System.Windows.Forms.AnchorStyles.Right)));
             this.progressBar.Location = new System.Drawing.Point(12, 70);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(414, 23);
+            this.progressBar.Size = new System.Drawing.Size(414, 18);
             this.progressBar.TabIndex = 2;
             // 
             // statusLabel
             // 
-            this.statusLabel.AutoSize = true;
+            this.statusLabel.AutoEllipsis = true;
             this.statusLabel.Location = new System.Drawing.Point(12, 54);
             this.statusLabel.Name = "statusLabel";
-            this.statusLabel.Size = new System.Drawing.Size(0, 13);
+            this.statusLabel.Size = new System.Drawing.Size(372, 13);
             this.statusLabel.TabIndex = 3;
             // 
             // progressLabel
             // 
-            this.progressLabel.AutoSize = true;
-            this.progressLabel.Location = new System.Drawing.Point(399, 54);
+            this.progressLabel.Location = new System.Drawing.Point(390, 54);
             this.progressLabel.Name = "progressLabel";
-            this.progressLabel.Size = new System.Drawing.Size(24, 13);
+            this.progressLabel.Size = new System.Drawing.Size(36, 13);
             this.progressLabel.TabIndex = 5;
             this.progressLabel.Text = "0 %";
+            this.progressLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // bottomPanel1
             // 
             this.bottomPanel1.BackColor = System.Drawing.SystemColors.Control;
             this.bottomPanel1.Controls.Add(this.cancelButton);
             this.bottomPanel1.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.bottomPanel1.Location = new System.Drawing.Point(0, 104);
+            this.bottomPanel1.Location = new System.Drawing.Point(0, 101);
             this.bottomPanel1.Name = "bottomPanel1";
-            this.bottomPanel1.Size = new System.Drawing.Size(438, 35);
+            this.bottomPanel1.Size = new System.Drawing.Size(438, 43);
             this.bottomPanel1.TabIndex = 4;
             // 
             // cancelButton
             // 
-            this.cancelButton.Location = new System.Drawing.Point(339, 6);
+            this.cancelButton.Location = new System.Drawing.Point(332, 10);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new System.Drawing.Size(90, 23);
             this.cancelButton.TabIndex = 0;
@@ -117,7 +118,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.UI
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(438, 139);
+            this.ClientSize = new System.Drawing.Size(438, 144);
             this.Controls.Add(this.progressLabel);
             this.Controls.Add(this.bottomPanel1);
             this.Controls.Add(this.statusLabel);
@@ -125,6 +126,7 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.UI
             this.Controls.Add(this.headerLabel);
             this.Controls.Add(this.applicationImage);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "InstallForm";
@@ -134,7 +136,6 @@ namespace CodeElements.UpdateSystem.Windows.Patcher.UI
             ((System.ComponentModel.ISupportInitialize)(this.applicationImage)).EndInit();
             this.bottomPanel1.ResumeLayout(false);
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
